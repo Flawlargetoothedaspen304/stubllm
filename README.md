@@ -5,7 +5,6 @@
 [![CI](https://github.com/airupt/stubllm/actions/workflows/ci.yml/badge.svg)](https://github.com/airupt/stubllm/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/stubllm)](https://pypi.org/project/stubllm/)
 [![Python](https://img.shields.io/pypi/pyversions/stubllm)](https://pypi.org/project/stubllm/)
-[![Downloads](https://img.shields.io/pypi/dm/stubllm)](https://pypi.org/project/stubllm/)
 [![GitHub Stars](https://img.shields.io/github/stars/airupt/stubllm?style=social)](https://github.com/airupt/stubllm/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
