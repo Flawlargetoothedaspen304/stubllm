@@ -24,7 +24,7 @@ class FixtureLoader:
         fixtures: list[Fixture] = []
         all_paths = (
             sorted(directory.rglob("*.yaml"))
-            + sorted(directory.rglob("*.yml"))  # type: ignore[operator]
+            + sorted(directory.rglob("*.yml"))
             + sorted(directory.rglob("*.json"))
         )
         for path in all_paths:
@@ -43,9 +43,9 @@ class FixtureLoader:
         text = path.read_text(encoding="utf-8")
         suffix = path.suffix.lower()
         if suffix in (".yaml", ".yml"):
-            return yaml.safe_load(text)  # type: ignore[return-value]
+            return yaml.safe_load(text)  # type: ignore[no-any-return]
         if suffix == ".json":
-            return json.loads(text)
+            return json.loads(text)  # type: ignore[no-any-return]
         raise ValueError(
             f"Unsupported fixture file format: {path.suffix!r}. Use .yaml, .yml, or .json"
         )

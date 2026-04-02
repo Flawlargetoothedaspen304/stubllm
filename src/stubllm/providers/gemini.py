@@ -75,6 +75,15 @@ class GeminiProvider(BaseProvider):
             mock_resp = fixture.get_response(count)
             request.app.state.fixture_call_counts[fixture_name] = count + 1
 
+            if mock_resp.latency_ms > 0:
+                await asyncio.sleep(mock_resp.latency_ms / 1000.0)
+
+            if mock_resp.http_status >= 400:
+                return JSONResponse(
+                    content=_format_error(mock_resp),
+                    status_code=mock_resp.http_status,
+                )
+
             return self.make_streaming_response(
                 mock_resp, model_id, request_id, media_type="text/event-stream"
             )
@@ -137,6 +146,7 @@ class GeminiProvider(BaseProvider):
         finish: bool,
         tool_call_chunk: dict[str, Any] | None,
     ) -> str:
+        parts: list[dict[str, Any]]
         if tool_call_chunk:
             import json as _json
 

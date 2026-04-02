@@ -197,6 +197,104 @@ def test_format_stream_chunk_invalid_json_args() -> None:
     assert part["functionCall"]["args"] == {}
 
 
+def test_stream_generate_content_error_response() -> None:
+    """streamGenerateContent must return HTTP error for error fixtures, not stream them."""
+    fixtures = [
+        Fixture(
+            name="stream_err",
+            match=MatchCriteria(provider=Provider.GEMINI),
+            response=MockResponse(
+                http_status=429,
+                error_message="Rate limited.",
+                error_code="RESOURCE_EXHAUSTED",
+            ),
+        )
+    ]
+    c = TestClient(create_app(fixtures=fixtures))
+    resp = c.post(
+        "/v1beta/models/gemini-pro:streamGenerateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "hi"}]}]},
+    )
+    assert resp.status_code == 429
+    data = resp.json()
+    assert data["error"]["code"] == 429
+    assert data["error"]["status"] == "RESOURCE_EXHAUSTED"
+
+
+def test_stream_generate_content_latency() -> None:
+    """streamGenerateContent respects latency_ms."""
+    import time
+
+    fixtures = [
+        Fixture(
+            name="slow_stream",
+            match=MatchCriteria(provider=Provider.GEMINI),
+            response=MockResponse(content="slow", latency_ms=50),
+        )
+    ]
+    c = TestClient(create_app(fixtures=fixtures))
+    start = time.monotonic()
+    resp = c.post(
+        "/v1beta/models/gemini-pro:streamGenerateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "hi"}]}]},
+    )
+    elapsed_ms = (time.monotonic() - start) * 1000
+    assert resp.status_code == 200
+    assert elapsed_ms >= 40
+
+
+def test_generate_content_tool_call_dict_arguments() -> None:
+    """format_response handles tool arguments passed as a dict (not a JSON string)."""
+    fixtures = [
+        Fixture(
+            name="dict_args",
+            match=MatchCriteria(provider=Provider.GEMINI),
+            response=MockResponse(
+                tool_calls=[
+                    ToolCallResponse(
+                        id="fc_002",
+                        function={"name": "lookup", "arguments": {"q": "test"}},
+                    )
+                ]
+            ),
+        )
+    ]
+    c = TestClient(create_app(fixtures=fixtures))
+    resp = c.post(
+        "/v1beta/models/gemini-pro:generateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "lookup"}]}]},
+    )
+    assert resp.status_code == 200
+    part = resp.json()["candidates"][0]["content"]["parts"][0]
+    assert part["functionCall"]["args"] == {"q": "test"}
+
+
+def test_generate_content_tool_call_invalid_json_arguments() -> None:
+    """format_response falls back to empty dict for unparseable JSON arguments."""
+    fixtures = [
+        Fixture(
+            name="bad_json",
+            match=MatchCriteria(provider=Provider.GEMINI),
+            response=MockResponse(
+                tool_calls=[
+                    ToolCallResponse(
+                        id="fc_003",
+                        function={"name": "broken", "arguments": "NOT_VALID_JSON"},
+                    )
+                ]
+            ),
+        )
+    ]
+    c = TestClient(create_app(fixtures=fixtures))
+    resp = c.post(
+        "/v1beta/models/gemini-pro:generateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "broken"}]}]},
+    )
+    assert resp.status_code == 200
+    part = resp.json()["candidates"][0]["content"]["parts"][0]
+    assert part["functionCall"]["args"] == {}
+
+
 def test_model_role_normalization() -> None:
     """Gemini 'model' role should be normalized to 'assistant' for matching."""
     from stubllm.fixtures.models import ContentMatch, MessageMatch

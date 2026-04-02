@@ -3,6 +3,7 @@
 **Deterministic mock server for LLM APIs. Test your AI code without spending tokens.**
 
 [![CI](https://github.com/airupt/stubllm/actions/workflows/ci.yml/badge.svg)](https://github.com/airupt/stubllm/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/airupt/stubllm/branch/main/graph/badge.svg)](https://codecov.io/gh/airupt/stubllm)
 [![PyPI](https://img.shields.io/pypi/v/stubllm)](https://pypi.org/project/stubllm/)
 [![Python](https://img.shields.io/pypi/pyversions/stubllm)](https://pypi.org/project/stubllm/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -246,6 +247,7 @@ def test_with_assertions(stubllm_server):
 
     # Assert specific prompt was sent
     stubllm_server.assert_called_with_prompt("hello")
+    stubllm_server.assert_called_with_prompt("Hello", case_sensitive=True)
 
     # Assert call counts
     stubllm_server.assert_called_once()
@@ -258,10 +260,33 @@ def test_with_assertions(stubllm_server):
     # Assert last call path
     stubllm_server.assert_last_call_path("/v1/chat/completions")
 
+    # Assert a specific fixture was matched (optionally N times)
+    stubllm_server.assert_fixture_hit("my_fixture")
+    stubllm_server.assert_fixture_hit("my_fixture", times=2)
+
     # Raw access
     assert stubllm_server.call_count == 2
     for call in stubllm_server.calls:
         print(call["path"], call["body"])
+```
+
+### Managing fixtures at runtime
+
+```python
+@use_fixtures("base.yaml")
+def test_dynamic_fixtures(stubllm_server):
+    # Replace all fixtures (also resets sequence counters)
+    stubllm_server.replace_fixtures([
+        Fixture(name="new", response=MockResponse(content="replaced"))
+    ])
+
+    # Append without removing existing fixtures
+    stubllm_server.add_fixtures([
+        Fixture(name="extra", response=MockResponse(content="extra"))
+    ])
+
+    # Reset call log (and sequence counters) between logical steps
+    stubllm_server.reset()
 ```
 
 ### Multiple fixture files
@@ -406,6 +431,27 @@ fixtures:
       provider: openai
     response:
       content: '{"name": "Alice", "age": 30}'  # must be valid JSON
+```
+
+---
+
+## Server endpoints
+
+Beyond the provider API endpoints, stubllm exposes a few utility routes:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /health` | Returns `{"status": "ok"}` — useful for readiness checks |
+| `GET /` | Server info: version, loaded fixture count, available providers |
+| `GET /_fixtures` | Lists all loaded fixtures (name, provider, model, endpoint) |
+| `GET /_stats` | Returns per-fixture call counts since the last reset |
+
+```bash
+# Check what fixtures are loaded
+curl http://localhost:8765/_fixtures
+
+# See how many times each fixture was hit
+curl http://localhost:8765/_stats
 ```
 
 ---

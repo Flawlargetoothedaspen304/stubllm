@@ -107,7 +107,7 @@ def create_app(
     # Store matcher reference so pytest plugin can access it
     app.state.matcher = matcher
     app.state.fixtures = all_fixtures
-    app.state.fixture_call_counts: dict[str, int] = {}
+    app.state.fixture_call_counts = {}
 
     return app
 
@@ -211,6 +211,7 @@ class MockLLMServer:
             self._thread.join(timeout=5)
 
     def _run_server(self) -> None:
+        assert self.app is not None
         config = uvicorn.Config(
             app=self.app,
             host=self._host,
@@ -223,19 +224,19 @@ class MockLLMServer:
 
 def _attach_call_logger(app: FastAPI, call_log: list[dict[str, Any]]) -> None:
     """Middleware that records every request for assertion helpers."""
-    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
     from starlette.requests import Request
     from starlette.responses import Response
 
     class CallLoggerMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request: Request, call_next: Any) -> Response:
+        async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
             body_bytes = await request.body()
 
             # Re-inject body so downstream handlers can read it
             async def receive() -> dict[str, Any]:
                 return {"type": "http.request", "body": body_bytes, "more_body": False}
 
-            request._receive = receive  # type: ignore[assignment]
+            request._receive = receive
 
             import json
 

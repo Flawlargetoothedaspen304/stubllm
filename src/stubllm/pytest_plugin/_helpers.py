@@ -123,7 +123,7 @@ def use_fixtures(*fixture_paths: str | Path) -> Callable[..., Any]:
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            server_fixture: MockLLMServerFixture | None = kwargs.get("stubllm_server")  # type: ignore[assignment]
+            server_fixture: MockLLMServerFixture | None = kwargs.get("stubllm_server")
             if server_fixture is None:
                 for arg in args:
                     if isinstance(arg, MockLLMServerFixture):

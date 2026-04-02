@@ -74,11 +74,12 @@ class FixtureMatcher:
             (m.get("content", "") for m in reversed(messages) if m.get("role") == "user"),
             "<no user message>",
         )
-        self._fallback.content = (
+        content = (
             f"No fixture matched for prompt {str(last_user)[:80]!r}. "
             f"Available fixtures: {available}"
         )
-        return Fixture(name=_FALLBACK_NAME, response=self._fallback), _FALLBACK_NAME
+        fallback = MockResponse(content=content, http_status=self._fallback.http_status)
+        return Fixture(name=_FALLBACK_NAME, response=fallback), _FALLBACK_NAME
 
     # ------------------------------------------------------------------
     # Private scoring
