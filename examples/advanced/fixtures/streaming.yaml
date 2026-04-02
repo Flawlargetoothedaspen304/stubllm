@@ -1,0 +1,28 @@
+fixtures:
+  - name: "streaming_story"
+    match:
+      provider: openai
+      messages:
+        - role: user
+          content:
+            contains: "story"
+    response:
+      model: "gpt-4o"
+      content: "Once upon a time in a land far away, there was a developer who never had to pay for LLM tokens during testing."
+      stream_chunk_delay_ms: 10
+      usage:
+        prompt_tokens: 15
+        completion_tokens: 30
+        total_tokens: 45
+
+  - name: "gemini_streaming"
+    match:
+      provider: gemini
+      messages:
+        - role: user
+          content:
+            contains: "explain"
+    response:
+      model: "gemini-pro"
+      content: "Here is a detailed explanation of how streaming works in mockllm..."
+      stream_chunk_delay_ms: 5

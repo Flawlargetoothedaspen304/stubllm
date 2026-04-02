@@ -1,0 +1,38 @@
+fixtures:
+  - name: "greeting"
+    match:
+      provider: openai
+      endpoint: /v1/chat/completions
+      messages:
+        - role: user
+          content:
+            contains: "hello"
+    response:
+      model: "gpt-4o"
+      content: "Hello! How can I help you today?"
+      usage:
+        prompt_tokens: 10
+        completion_tokens: 12
+        total_tokens: 22
+
+  - name: "tool_call_weather"
+    match:
+      provider: openai
+      endpoint: /v1/chat/completions
+      messages:
+        - role: user
+          content:
+            contains: "weather"
+      tools_present: true
+    response:
+      model: "gpt-4o"
+      tool_calls:
+        - id: "call_abc123"
+          type: function
+          function:
+            name: "get_weather"
+            arguments: '{"location": "Amsterdam"}'
+      usage:
+        prompt_tokens: 45
+        completion_tokens: 20
+        total_tokens: 65
