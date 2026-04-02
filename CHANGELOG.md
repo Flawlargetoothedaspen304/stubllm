@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2026-04-02
+
+### Fixed
+- **Gemini streaming error responses**: `streamGenerateContent` now returns proper HTTP errors (4xx/5xx) instead of silently streaming error fixtures as SSE events.
+- **Thread-unsafe fallback mutation**: `FixtureMatcher` no longer mutates `self._fallback.content` in-place when no fixture matches. A new `MockResponse` object is created each time, preventing data races under concurrent load.
+- **mypy strict compliance**: Resolved all `no-any-return`, `no-redef`, and `unused-ignore` errors across `loader.py`, `gemini.py`, `server.py`, and `pytest_plugin/_helpers.py`.
+
+### Added
+- **PEP 561 `py.typed` marker**: stubllm is now a typed package — type checkers (mypy, pyright) will use its inline annotations automatically.
+- **CI restructured**: `lint` and `type-check` are now separate CI jobs (previously steps inside the matrix job). This fixes branch protection status checks and avoids running ruff/mypy 4× per push.
+- **Publish workflow runs tests**: The publish workflow now runs lint, type-check, and tests before building, ensuring nothing broken can be shipped via a tag.
+- **OIDC trusted publishing**: Automated PyPI releases via GitHub Actions — no API token stored in secrets.
+- **Dependabot**: Weekly updates for pip dependencies and GitHub Actions.
+- **SECURITY.md**: Vulnerability reporting policy.
+- **Branch protection on main**: Force-push and deletion blocked; all CI jobs required to pass before merge.
+
 ## [0.1.4] - 2026-04-02
 
 ### Fixed
