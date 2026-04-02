@@ -30,7 +30,7 @@ class GeminiProvider(BaseProvider):
 
             messages = _normalize_contents(contents)
 
-            mock_resp, fixture_name = self._matcher.match(
+            fixture, fixture_name = self._matcher.match(
                 provider=Provider.GEMINI,
                 endpoint=f"/v1beta/models/{model_id}:generateContent",
                 messages=messages,
@@ -38,6 +38,9 @@ class GeminiProvider(BaseProvider):
                 tools=tools,
                 headers=dict(request.headers),
             )
+            count = request.app.state.fixture_call_counts.get(fixture_name, 0)
+            mock_resp = fixture.get_response(count)
+            request.app.state.fixture_call_counts[fixture_name] = count + 1
 
             if mock_resp.latency_ms > 0:
                 await asyncio.sleep(mock_resp.latency_ms / 1000.0)
@@ -60,7 +63,7 @@ class GeminiProvider(BaseProvider):
             messages = _normalize_contents(contents)
             request_id = str(uuid.uuid4())
 
-            mock_resp, fixture_name = self._matcher.match(
+            fixture, fixture_name = self._matcher.match(
                 provider=Provider.GEMINI,
                 endpoint=f"/v1beta/models/{model_id}:streamGenerateContent",
                 messages=messages,
@@ -68,6 +71,9 @@ class GeminiProvider(BaseProvider):
                 tools=tools,
                 headers=dict(request.headers),
             )
+            count = request.app.state.fixture_call_counts.get(fixture_name, 0)
+            mock_resp = fixture.get_response(count)
+            request.app.state.fixture_call_counts[fixture_name] = count + 1
 
             return self.make_streaming_response(
                 mock_resp, model_id, request_id, media_type="text/event-stream"

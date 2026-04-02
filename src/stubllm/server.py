@@ -101,6 +101,7 @@ def create_app(
     # Store matcher reference so pytest plugin can access it
     app.state.matcher = matcher
     app.state.fixtures = all_fixtures
+    app.state.fixture_call_counts: dict[str, int] = {}
 
     return app
 
@@ -151,6 +152,7 @@ class MockLLMServer:
             self.app.state.fixtures.clear()
             self.app.state.fixtures.extend(fixtures)
             self.app.state.matcher._fixtures = self.app.state.fixtures
+            self.app.state.fixture_call_counts.clear()
 
     def start(self) -> None:
         """Start server in a background thread."""

@@ -53,7 +53,7 @@ class TestFixtureMatcher:
             messages=[_msg("user", "something unmatched")],
         )
         assert name == "__fallback__"
-        assert "No fixture matched" in (resp.content or "")
+        assert "No fixture matched" in (resp.get_response(0).content or "")
 
     def test_provider_mismatch_skipped(self) -> None:
         fixtures = [

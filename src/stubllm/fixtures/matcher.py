@@ -7,6 +7,8 @@ from typing import Any
 
 from stubllm.fixtures.models import Fixture, MatchCriteria, MessageMatch, MockResponse, Provider
 
+_FALLBACK_NAME = "__fallback__"
+
 
 @dataclass
 class MatchResult:
@@ -42,10 +44,10 @@ class FixtureMatcher:
         model: str | None = None,
         tools: list[dict[str, Any]] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> tuple[MockResponse, str]:
-        """Return (response, fixture_name) for the best-matching fixture.
+    ) -> tuple[Fixture, str]:
+        """Return (fixture, fixture_name) for the best-matching fixture.
 
-        Falls back to the default fallback if nothing matches.
+        Falls back to a synthetic fallback fixture if nothing matches.
         """
         best: MatchResult | None = None
 
@@ -65,7 +67,7 @@ class FixtureMatcher:
                 best = MatchResult(fixture=fixture, score=score)
 
         if best is not None:
-            return best.fixture.response, best.fixture.name
+            return best.fixture, best.fixture.name
 
         available = ", ".join(repr(f.name) for f in self._fixtures) or "none"
         last_user = next(
@@ -76,7 +78,7 @@ class FixtureMatcher:
             f"No fixture matched for prompt {str(last_user)[:80]!r}. "
             f"Available fixtures: {available}"
         )
-        return self._fallback, "__fallback__"
+        return Fixture(name=_FALLBACK_NAME, response=self._fallback), _FALLBACK_NAME
 
     # ------------------------------------------------------------------
     # Private scoring

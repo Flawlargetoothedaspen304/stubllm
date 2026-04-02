@@ -31,7 +31,7 @@ class OpenAIProvider(BaseProvider):
             stream = body.get("stream", False)
             response_format = body.get("response_format")
 
-            mock_resp, fixture_name = self._matcher.match(
+            fixture, fixture_name = self._matcher.match(
                 provider=Provider.OPENAI,
                 endpoint="/v1/chat/completions",
                 messages=messages,
@@ -39,6 +39,9 @@ class OpenAIProvider(BaseProvider):
                 tools=tools,
                 headers=dict(request.headers),
             )
+            count = request.app.state.fixture_call_counts.get(fixture_name, 0)
+            mock_resp = fixture.get_response(count)
+            request.app.state.fixture_call_counts[fixture_name] = count + 1
 
             request_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
 

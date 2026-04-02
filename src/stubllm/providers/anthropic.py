@@ -34,7 +34,7 @@ class AnthropicProvider(BaseProvider):
             # Normalize Anthropic messages to common format
             normalized = _normalize_messages(raw_messages, system)
 
-            mock_resp, fixture_name = self._matcher.match(
+            fixture, fixture_name = self._matcher.match(
                 provider=Provider.ANTHROPIC,
                 endpoint="/v1/messages",
                 messages=normalized,
@@ -42,6 +42,9 @@ class AnthropicProvider(BaseProvider):
                 tools=tools,
                 headers=dict(request.headers),
             )
+            count = request.app.state.fixture_call_counts.get(fixture_name, 0)
+            mock_resp = fixture.get_response(count)
+            request.app.state.fixture_call_counts[fixture_name] = count + 1
 
             request_id = f"msg_{uuid.uuid4().hex[:24]}"
 

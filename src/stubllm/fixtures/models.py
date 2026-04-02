@@ -139,6 +139,28 @@ class Fixture(BaseModel):
     name: str = "unnamed"
     match: MatchCriteria = Field(default_factory=MatchCriteria)
     response: MockResponse = Field(default_factory=MockResponse)
+    sequence: list[MockResponse] | None = None
+
+    @model_validator(mode="after")
+    def validate_response_or_sequence(self) -> Fixture:
+        if self.sequence is not None and "response" in self.model_fields_set:
+            raise ValueError(
+                "Cannot set both 'response' and 'sequence' on a Fixture. "
+                "Use 'sequence' for successive responses, or 'response' for a single response."
+            )
+        return self
+
+    def get_response(self, call_index: int) -> MockResponse:
+        """Return the response for the given call index.
+
+        If a sequence is defined, returns sequence[call_index] clamped to the
+        last entry (so the last response repeats after the sequence is exhausted).
+        Otherwise returns self.response.
+        """
+        if self.sequence:
+            idx = min(call_index, len(self.sequence) - 1)
+            return self.sequence[idx]
+        return self.response
 
 
 class FixtureFile(BaseModel):

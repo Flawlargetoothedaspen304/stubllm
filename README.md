@@ -54,6 +54,7 @@ python your_app.py  # no real API calls, no tokens spent
 | Pytest integration | ✅ | ❌ | ❌ |
 | Fixtures / record-replay | ✅ | ❌ | ❌ |
 | Error injection | ✅ | ❌ | ❌ |
+| Response sequences | ✅ | ❌ | ❌ |
 | CI-friendly | ✅ | Slow/expensive | Heavy |
 
 ---
@@ -157,6 +158,27 @@ fixtures:
 | 401 | `authentication_error` | `authentication_error` | `UNAUTHENTICATED` |
 
 Use this to test retry logic, fallback behaviour, and error handling without ever hitting a real API.
+
+### Response sequences
+
+Return different responses on successive calls to the same fixture. The last entry repeats once the sequence is exhausted.
+
+```yaml
+fixtures:
+  - name: "retry"
+    match:
+      provider: openai
+    sequence:
+      - http_status: 429
+        error_message: "Rate limit exceeded."
+      - http_status: 429
+        error_message: "Rate limit exceeded."
+      - content: "Success after retry!"
+```
+
+Call 1 → 429, call 2 → 429, call 3+ → 200 `"Success after retry!"`.
+
+Use this to test retry logic, exponential backoff, and circuit breakers without any real API calls. Counts reset when `replace_fixtures()` is called.
 
 ### Content match strategies
 
