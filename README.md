@@ -9,38 +9,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/airupt/stubllm?style=social)](https://github.com/airupt/stubllm/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Works with: **OpenAI** · **Anthropic** · **Google Gemini**
-
----
-
-## 30-second quickstart
-
-```bash
-# 1. Install
-pip install stubllm
-
-# 2. Create a fixture
-mkdir fixtures
-cat > fixtures/chat.yaml << 'EOF'
-fixtures:
-  - name: "greeting"
-    match:
-      provider: openai
-      messages:
-        - role: user
-          content:
-            contains: "hello"
-    response:
-      content: "Hello! How can I help you today?"
-EOF
-
-# 3. Start the server
-stubllm serve --port 8765
-
-# 4. Point your code at it
-export OPENAI_BASE_URL=http://localhost:8765/v1/
-python your_app.py  # no real API calls, no tokens spent
-```
+Works with **OpenAI** · **Anthropic** · **Google Gemini**
 
 ---
 
@@ -49,41 +18,69 @@ python your_app.py  # no real API calls, no tokens spent
 | | stubllm | Real API | Ollama |
 |---|---|---|---|
 | Cost | Free | Paid | Free |
-| Speed | <1ms | 1-30s | 5-30s |
+| Speed | <1ms | 1–30s | 5–30s |
 | Deterministic | ✅ | ❌ | ❌ |
 | Works offline | ✅ | ❌ | ✅ |
 | No GPU needed | ✅ | ✅ | ❌ |
-| Pytest integration | ✅ | ❌ | ❌ |
-| Fixtures / record-replay | ✅ | ❌ | ❌ |
+| pytest integration | ✅ | ❌ | ❌ |
+| Fixtures & record-replay | ✅ | ❌ | ❌ |
 | Error injection | ✅ | ❌ | ❌ |
 | Response sequences | ✅ | ❌ | ❌ |
 | CI-friendly | ✅ | Slow/expensive | Heavy |
 
 ---
 
-## Installation
+## Install
 
 ```bash
-pip install stubllm
-
-# With pytest support
-pip install "stubllm[pytest]"
+pip install stubllm               # server + CLI
+pip install "stubllm[pytest]"     # + pytest plugin
 ```
 
 ---
 
-## Fixture format
+## Quickstart
 
-Fixtures are YAML (or JSON) files that map request patterns to responses.
+**1. Create a fixture file**
 
-### Basic text response
+```yaml
+# fixtures/chat.yaml
+fixtures:
+  - name: greeting
+    match:
+      provider: openai
+      messages:
+        - role: user
+          content:
+            contains: "hello"
+    response:
+      content: "Hello! How can I help you today?"
+```
+
+**2. Start the server**
+
+```bash
+stubllm serve --fixture-dir ./fixtures
+```
+
+**3. Point your app at it**
+
+```bash
+export OPENAI_BASE_URL=http://localhost:8765/v1/
+python your_app.py   # no real API calls, no tokens spent
+```
+
+---
+
+## Fixtures
+
+### Basic response
 
 ```yaml
 fixtures:
-  - name: "greeting"
+  - name: greeting
     match:
       provider: openai          # openai | anthropic | gemini | any
-      endpoint: /v1/chat/completions   # optional
       model: "gpt-4o"           # optional
       messages:
         - role: user
@@ -97,11 +94,34 @@ fixtures:
         total_tokens: 22
 ```
 
+### Match strategies
+
+```yaml
+content:
+  exact: "Hello, world!"     # highest priority — case-sensitive full match
+  contains: "weather"        # substring — case-insensitive
+  regex: "tell me.*joke"     # regular expression
+```
+
+### Matching priority
+
+When multiple fixtures match, the most specific wins:
+
+| Criteria | Score |
+|---|---|
+| `exact` message content | +10 |
+| `contains` message content | +5 |
+| `regex` message content | +4 |
+| `model` specified | +2 |
+| `tools_present` specified | +2 |
+| `provider` specified | +1 |
+| Fallback (no criteria) | 0 |
+
 ### Tool call response
 
 ```yaml
 fixtures:
-  - name: "weather_tool"
+  - name: weather_tool
     match:
       provider: openai
       messages:
@@ -118,28 +138,13 @@ fixtures:
             arguments: '{"location": "Amsterdam"}'
 ```
 
-### Streaming with delay
-
-```yaml
-fixtures:
-  - name: "slow_story"
-    match:
-      messages:
-        - role: user
-          content:
-            contains: "story"
-    response:
-      content: "Once upon a time..."
-      stream_chunk_delay_ms: 50   # simulate realistic streaming speed
-```
-
 ### Error injection
 
 Simulate rate limits, 500s, or any HTTP error. Each provider gets its native error format automatically.
 
 ```yaml
 fixtures:
-  - name: "rate_limit"
+  - name: rate_limit
     match:
       provider: openai
       messages:
@@ -159,15 +164,13 @@ fixtures:
 | 503 | `server_error` | `api_error` | `UNAVAILABLE` |
 | 401 | `authentication_error` | `authentication_error` | `UNAUTHENTICATED` |
 
-Use this to test retry logic, fallback behaviour, and error handling without ever hitting a real API.
-
 ### Response sequences
 
 Return different responses on successive calls to the same fixture. The last entry repeats once the sequence is exhausted.
 
 ```yaml
 fixtures:
-  - name: "retry"
+  - name: retry_scenario
     match:
       provider: openai
     sequence:
@@ -178,129 +181,34 @@ fixtures:
       - content: "Success after retry!"
 ```
 
-Call 1 → 429, call 2 → 429, call 3+ → 200 `"Success after retry!"`.
+Call 1 → 429, call 2 → 429, call 3+ → success. Sequence counters reset when `replace_fixtures()` or `reset()` is called.
 
-Use this to test retry logic, exponential backoff, and circuit breakers without any real API calls. Counts reset when `replace_fixtures()` is called.
+### Streaming
 
-### Content match strategies
+Streaming is controlled by the `stream: true` parameter in the request — fixtures work identically for both streaming and non-streaming calls. Control chunk speed in the fixture:
 
 ```yaml
-# Exact match (highest priority)
-content:
-  exact: "Hello, world!"
-
-# Substring match (case-insensitive)
-content:
-  contains: "weather"
-
-# Regular expression
-content:
-  regex: "tell me.*joke"
+response:
+  content: "A long streaming response..."
+  stream_chunk_delay_ms: 20   # default: 20ms between chunks
 ```
 
-### Matching priority
+### Structured output
 
-Higher specificity = higher priority. When multiple fixtures match, the most specific wins:
+When `response_format: { type: "json_schema" }` is set, stubllm validates that the fixture response is valid JSON:
 
-1. `exact` message content (score: +10)
-2. `contains` message content (score: +5)
-3. `regex` message content (score: +4)
-4. `model` specified (score: +2)
-5. `tools_present` specified (score: +2)
-6. `provider` specified (score: +1)
-7. Fallback (no match criteria)
-
----
-
-## Pytest plugin
-
-### Basic setup
-
-```python
-# conftest.py — nothing needed, stubllm auto-registers as a pytest plugin
-# The `stubllm_server` fixture is available automatically after installing stubllm
-```
-
-```python
-# test_my_app.py
-import openai
-from stubllm.pytest_plugin import use_fixtures
-
-@use_fixtures("fixtures/chat.yaml")
-def test_greeting(stubllm_server):
-    client = openai.OpenAI(
-        base_url=stubllm_server.openai_url,  # includes /v1/ — openai SDK needs this
-        api_key="test-key"
-    )
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": "hello world"}]
-    )
-    assert "Hello" in response.choices[0].message.content
-    assert stubllm_server.call_count == 1
-```
-
-### Assertion helpers
-
-```python
-def test_with_assertions(stubllm_server):
-    # ... make some calls ...
-
-    # Assert specific prompt was sent
-    stubllm_server.assert_called_with_prompt("hello")
-    stubllm_server.assert_called_with_prompt("Hello", case_sensitive=True)
-
-    # Assert call counts
-    stubllm_server.assert_called_once()
-    stubllm_server.assert_called_n_times(3)
-    stubllm_server.assert_not_called()
-
-    # Assert which model was used
-    stubllm_server.assert_model_was("gpt-4o")
-
-    # Assert last call path
-    stubllm_server.assert_last_call_path("/v1/chat/completions")
-
-    # Assert a specific fixture was matched (optionally N times)
-    stubllm_server.assert_fixture_hit("my_fixture")
-    stubllm_server.assert_fixture_hit("my_fixture", times=2)
-
-    # Raw access
-    assert stubllm_server.call_count == 2
-    for call in stubllm_server.calls:
-        print(call["path"], call["body"])
-```
-
-### Managing fixtures at runtime
-
-```python
-@use_fixtures("base.yaml")
-def test_dynamic_fixtures(stubllm_server):
-    # Replace all fixtures (also resets sequence counters)
-    stubllm_server.replace_fixtures([
-        Fixture(name="new", response=MockResponse(content="replaced"))
-    ])
-
-    # Append without removing existing fixtures
-    stubllm_server.add_fixtures([
-        Fixture(name="extra", response=MockResponse(content="extra"))
-    ])
-
-    # Reset call log (and sequence counters) between logical steps
-    stubllm_server.reset()
-```
-
-### Multiple fixture files
-
-```python
-@use_fixtures("fixtures/chat.yaml", "fixtures/tools.yaml")
-def test_combined(stubllm_server):
-    ...  # both fixture files are active for this test
+```yaml
+fixtures:
+  - name: structured
+    match:
+      provider: openai
+    response:
+      content: '{"name": "Alice", "age": 30}'
 ```
 
 ---
 
-## Multi-provider support
+## Providers
 
 ### OpenAI
 
@@ -308,7 +216,7 @@ def test_combined(stubllm_server):
 import openai
 
 client = openai.OpenAI(
-    base_url="http://localhost:8765/v1/",  # note: /v1/ required — the OpenAI SDK does not add it
+    base_url="http://localhost:8765/v1/",  # /v1/ required — the SDK does not add it
     api_key="test-key"
 )
 response = client.chat.completions.create(
@@ -323,7 +231,7 @@ response = client.chat.completions.create(
 import anthropic
 
 client = anthropic.Anthropic(
-    base_url="http://localhost:8765",  # Anthropic SDK adds /v1/ itself
+    base_url="http://localhost:8765",  # SDK adds /v1/ itself
     api_key="test-key"
 )
 message = client.messages.create(
@@ -350,69 +258,101 @@ response = client.models.generate_content(
 
 ---
 
-## Streaming
+## pytest plugin
 
-All providers support streaming. Fixtures work identically — streaming is controlled by the `stream: true` parameter in the request, not the fixture.
+The plugin registers automatically after `pip install "stubllm[pytest]"` — no `conftest.py` needed.
+
+### Basic test
 
 ```python
-# OpenAI streaming
-stream = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[{"role": "user", "content": "hello"}],
-    stream=True,
-)
-for chunk in stream:
-    print(chunk.choices[0].delta.content, end="", flush=True)
+import openai
+from stubllm.pytest_plugin import use_fixtures
+
+@use_fixtures("fixtures/chat.yaml")
+def test_greeting(stubllm_server):
+    client = openai.OpenAI(
+        base_url=stubllm_server.openai_url,  # includes /v1/
+        api_key="test-key"
+    )
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": "hello world"}]
+    )
+    assert "Hello" in response.choices[0].message.content
+    assert stubllm_server.call_count == 1
 ```
 
-Control streaming speed in fixtures:
-```yaml
-response:
-  content: "A long streaming response..."
-  stream_chunk_delay_ms: 20   # default: 20ms between chunks
+### Assertions
+
+```python
+# Prompt content
+stubllm_server.assert_called_with_prompt("hello")
+stubllm_server.assert_called_with_prompt("Hello", case_sensitive=True)
+
+# Call counts
+stubllm_server.assert_called_once()
+stubllm_server.assert_called_n_times(3)
+stubllm_server.assert_not_called()
+
+# Model and path
+stubllm_server.assert_model_was("gpt-4o")
+stubllm_server.assert_last_call_path("/v1/chat/completions")
+
+# Fixture hits
+stubllm_server.assert_fixture_hit("my_fixture")
+stubllm_server.assert_fixture_hit("my_fixture", times=2)
+
+# Raw access
+assert stubllm_server.call_count == 2
+for call in stubllm_server.calls:
+    print(call["path"], call["body"])
+```
+
+### Runtime fixture management
+
+```python
+from stubllm import Fixture, MockResponse
+
+@use_fixtures("base.yaml")
+def test_dynamic(stubllm_server):
+    # Replace all fixtures (resets sequence counters)
+    stubllm_server.replace_fixtures([
+        Fixture(name="new", response=MockResponse(content="replaced"))
+    ])
+
+    # Append without replacing
+    stubllm_server.add_fixtures([
+        Fixture(name="extra", response=MockResponse(content="extra"))
+    ])
+
+    # Reset call log and sequence counters between steps
+    stubllm_server.reset()
+```
+
+### Multiple fixture files
+
+```python
+@use_fixtures("fixtures/chat.yaml", "fixtures/tools.yaml")
+def test_combined(stubllm_server):
+    ...
 ```
 
 ---
 
-## Record and replay
-
-Record real API interactions for later replay:
+## CLI
 
 ```bash
-# Start in record mode (proxies to real OpenAI, saves fixtures)
-stubllm record \
-  --target https://api.openai.com \
-  --fixture-dir ./recorded_fixtures
-
-# Run your app against the recording proxy
-OPENAI_BASE_URL=http://localhost:8765/v1/ python your_app.py
-
-# Fixtures are saved to ./recorded_fixtures/
-ls recorded_fixtures/
-# recorded_hello_world_1706000000.yaml
-# recorded_weather_query_1706000001.yaml
-```
-
-Recorded fixtures are sanitized (API keys removed) and can be committed to your repo.
-
----
-
-## CLI reference
-
-```bash
-# Start server (auto-loads ./fixtures/ if it exists)
+# Start server — auto-loads ./fixtures/ if it exists
 stubllm serve
 
 # Custom port and fixture directory
 stubllm serve --port 9000 --fixture-dir ./my-fixtures
 
-# Multiple fixture directories
+# Multiple fixture directories or individual files
 stubllm serve --fixture-dir ./fixtures/openai --fixture-dir ./fixtures/anthropic
-
-# Individual fixture files
 stubllm serve --fixture-file chat.yaml --fixture-file tools.yaml
 
-# Record mode
+# Record mode — proxy real API calls and save as fixtures
 stubllm record --target https://api.openai.com --fixture-dir ./recorded
 
 # Version
@@ -421,77 +361,53 @@ stubllm --version
 
 ---
 
-## Structured output (JSON schema)
+## Record & replay
 
-When `response_format: { type: "json_schema" }` is set, stubllm validates that the fixture response is valid JSON. If it's not, it wraps the content automatically.
+Record real API interactions once, replay them forever:
 
-```yaml
-fixtures:
-  - name: "structured"
-    match:
-      provider: openai
-    response:
-      content: '{"name": "Alice", "age": 30}'  # must be valid JSON
+```bash
+# 1. Start in record mode
+stubllm record --target https://api.openai.com --fixture-dir ./recorded_fixtures
+
+# 2. Run your app — calls are proxied to OpenAI and saved locally
+OPENAI_BASE_URL=http://localhost:8765/v1/ python your_app.py
+
+# 3. Commit the recorded fixtures (API keys are stripped automatically)
+git add recorded_fixtures/
 ```
+
+Future runs use the local fixtures — no network, no tokens.
 
 ---
 
 ## Server endpoints
 
-Beyond the provider API endpoints, stubllm exposes a few utility routes:
-
 | Endpoint | Description |
-|----------|-------------|
-| `GET /health` | Returns `{"status": "ok"}` — useful for readiness checks |
-| `GET /` | Server info: version, loaded fixture count, available providers |
+|---|---|
+| `GET /health` | Returns `{"status": "ok"}` — for readiness checks |
+| `GET /` | Server info: version, fixture count, available providers |
 | `GET /_fixtures` | Lists all loaded fixtures (name, provider, model, endpoint) |
-| `GET /_stats` | Returns per-fixture call counts since the last reset |
+| `GET /_stats` | Per-fixture call counts since last reset |
 
 ```bash
-# Check what fixtures are loaded
 curl http://localhost:8765/_fixtures
-
-# See how many times each fixture was hit
 curl http://localhost:8765/_stats
-```
-
----
-
-## Project structure
-
-```
-stubllm/
-├── src/stubllm/
-│   ├── fixtures/       # YAML/JSON loading, Pydantic models, matching engine
-│   ├── providers/      # OpenAI, Anthropic, Gemini endpoint handlers
-│   ├── streaming/      # SSE streaming simulation
-│   ├── recorder/       # Record-and-replay proxy
-│   ├── pytest_plugin/  # pytest fixtures and @use_fixtures decorator
-│   ├── server.py       # FastAPI app factory
-│   └── cli.py          # click CLI
-├── tests/              # >80% coverage
-└── examples/           # Working examples (basic + advanced)
 ```
 
 ---
 
 ## Contributing
 
-```bash
-git clone https://github.com/airupt/stubllm
-cd stubllm
-pip install -e ".[dev]"
-pytest tests/ -v
-```
-
----
-
-## Star history
-
-[![Star History Chart](https://api.star-history.com/svg?repos=airupt/stubllm&type=Date)](https://star-history.com/#airupt/stubllm&Date)
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
 ## License
 
 MIT
+
+---
+
+## Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=airupt/stubllm&type=Date)](https://star-history.com/#airupt/stubllm&Date)
