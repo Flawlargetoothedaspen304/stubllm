@@ -6,8 +6,6 @@ import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from stubllm.recorder.proxy import (
     _build_fixture,
     _detect_provider,
@@ -91,6 +89,7 @@ class TestCreateRecordingApp:
 
     def _make_app(self, upstream_mock: MagicMock, tmp_path: Path):
         from fastapi.testclient import TestClient
+
         from stubllm.recorder.proxy import create_recording_app
 
         mock_client = AsyncMock()

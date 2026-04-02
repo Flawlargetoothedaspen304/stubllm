@@ -72,7 +72,7 @@ def test_manual_retry_loop(stubllm_server: object) -> None:
     )
 
     last_response = None
-    for attempt in range(5):
+    for _attempt in range(5):
         try:
             last_response = client.chat.completions.create(
                 model="gpt-4o",

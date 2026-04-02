@@ -38,7 +38,10 @@ def test_tool_with_regex_match(stubllm_server: object) -> None:
         tools=[
             {
                 "type": "function",
-                "function": {"name": "web_search", "parameters": {"type": "object", "properties": {}}},
+                "function": {
+                    "name": "web_search",
+                    "parameters": {"type": "object", "properties": {}},
+                },
             }
         ],
     )
@@ -88,6 +91,14 @@ def test_multiple_fixture_files_loaded(stubllm_server: object) -> None:
     r2 = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": "search for something"}],
-        tools=[{"type": "function", "function": {"name": "web_search", "parameters": {"type": "object", "properties": {}}}}],
+        tools=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "web_search",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            }
+        ],
     )
     assert r2.choices[0].message.tool_calls is not None

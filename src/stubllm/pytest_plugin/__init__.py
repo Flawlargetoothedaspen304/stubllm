@@ -10,7 +10,10 @@ __all__ = ["MockLLMServerFixture", "use_fixtures"]
 def __getattr__(name: str) -> Any:
     """Lazy re-export so _helpers.py is not loaded at plugin registration time."""
     if name in ("MockLLMServerFixture", "use_fixtures"):
-        from stubllm.pytest_plugin._helpers import MockLLMServerFixture, use_fixtures  # noqa: PLC0415
+        from stubllm.pytest_plugin._helpers import (  # noqa: PLC0415
+            MockLLMServerFixture,
+            use_fixtures,
+        )
 
         _globals = globals()
         _globals["MockLLMServerFixture"] = MockLLMServerFixture

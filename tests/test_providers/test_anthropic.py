@@ -185,7 +185,7 @@ def test_tool_use_dict_arguments() -> None:
                 tool_calls=[
                     ToolCallResponse(
                         id="toolu_02",
-                        function={"name": "search", "arguments": {"query": "test"}},  # dict, not str
+                        function={"name": "search", "arguments": {"query": "test"}},  # dict
                     )
                 ]
             ),

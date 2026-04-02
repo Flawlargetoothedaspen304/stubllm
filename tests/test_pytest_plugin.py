@@ -253,7 +253,9 @@ class TestUseFixturesDecorator:
         my_test()
         assert called == [True]
 
-    def test_decorator_finds_positional_server_arg(self, plugin_server: MockLLMServerFixture) -> None:
+    def test_decorator_finds_positional_server_arg(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
         """Server passed as a positional arg (not a kwarg) must still be detected."""
         called = []
 
@@ -265,7 +267,9 @@ class TestUseFixturesDecorator:
         my_test(plugin_server)
         assert called == [True]
 
-    def test_decorator_loads_fixture_file(self, tmp_path: pytest.TempPathFactory, plugin_server: MockLLMServerFixture) -> None:
+    def test_decorator_loads_fixture_file(
+        self, tmp_path: pytest.TempPathFactory, plugin_server: MockLLMServerFixture
+    ) -> None:
         """Fixture files are loaded and pushed to the server when the test runs."""
         yaml_file = tmp_path / "seq_test.yaml"  # type: ignore[operator]
         yaml_file.write_text(
