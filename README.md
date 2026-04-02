@@ -211,15 +211,21 @@ def test_with_assertions(stubllm_server):
     # Assert specific prompt was sent
     stubllm_server.assert_called_with_prompt("hello")
 
-    # Assert number of calls
-    assert stubllm_server.call_count == 2
+    # Assert call counts
+    stubllm_server.assert_called_once()
+    stubllm_server.assert_called_n_times(3)
+    stubllm_server.assert_not_called()
 
-    # Inspect all calls
-    for call in stubllm_server.calls:
-        print(call["path"], call["body"])
+    # Assert which model was used
+    stubllm_server.assert_model_was("gpt-4o")
 
     # Assert last call path
     stubllm_server.assert_last_call_path("/v1/chat/completions")
+
+    # Raw access
+    assert stubllm_server.call_count == 2
+    for call in stubllm_server.calls:
+        print(call["path"], call["body"])
 ```
 
 ### Multiple fixture files
