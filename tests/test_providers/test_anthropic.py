@@ -108,6 +108,52 @@ def test_system_prompt_normalization() -> None:
     assert data["content"][0]["text"] == "System matched!"
 
 
+def test_error_response_rate_limit() -> None:
+    fixtures = [
+        Fixture(
+            name="rate_limit",
+            match=MatchCriteria(provider=Provider.ANTHROPIC),
+            response=MockResponse(
+                http_status=429,
+                error_message="Rate limit exceeded.",
+                error_code="rate_limit_error",
+            ),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1/messages",
+        json={"model": "claude-opus-4-6", "messages": [{"role": "user", "content": "hi"}]},
+    )
+    assert resp.status_code == 429
+    data = resp.json()
+    assert data["type"] == "error"
+    assert data["error"]["type"] == "rate_limit_error"
+    assert data["error"]["message"] == "Rate limit exceeded."
+
+
+def test_error_response_overloaded() -> None:
+    fixtures = [
+        Fixture(
+            name="overloaded",
+            match=MatchCriteria(provider=Provider.ANTHROPIC),
+            response=MockResponse(
+                http_status=529,
+                error_message="Overloaded.",
+            ),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1/messages",
+        json={"model": "claude-opus-4-6", "messages": [{"role": "user", "content": "hi"}]},
+    )
+    assert resp.status_code == 529
+    data = resp.json()
+    assert data["type"] == "error"
+    assert data["error"]["message"] == "Overloaded."
+
+
 def test_streaming_anthropic() -> None:
     fixtures = [
         Fixture(

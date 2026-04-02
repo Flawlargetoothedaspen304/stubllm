@@ -26,7 +26,7 @@ def create_app(
     fixture_files: list[Path] | None = None,
     fallback_response: MockResponse | None = None,
 ) -> FastAPI:
-    """Create and configure the mockllm FastAPI application.
+    """Create and configure the stubllm FastAPI application.
 
     Args:
         fixtures: Pre-loaded fixture objects.

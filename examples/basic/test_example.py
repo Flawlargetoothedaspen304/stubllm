@@ -1,4 +1,4 @@
-"""Basic example: using mockllm with the OpenAI client.
+"""Basic example: using stubllm with the OpenAI client.
 
 Run with:
     cd examples/basic

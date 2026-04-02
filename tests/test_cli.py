@@ -12,13 +12,13 @@ class TestCLI:
         runner = CliRunner()
         result = runner.invoke(cli, ["--version"])
         assert result.exit_code == 0
-        assert "0.1.1" in result.output
+        assert "0.1.2" in result.output
 
     def test_help(self) -> None:
         runner = CliRunner()
         result = runner.invoke(cli, ["--help"])
         assert result.exit_code == 0
-        assert "mockllm" in result.output.lower()
+        assert "stubllm" in result.output.lower()
 
     def test_serve_help(self) -> None:
         runner = CliRunner()

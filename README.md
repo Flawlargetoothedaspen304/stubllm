@@ -53,6 +53,7 @@ python your_app.py  # no real API calls, no tokens spent
 | No GPU needed | ✅ | ✅ | ❌ |
 | Pytest integration | ✅ | ❌ | ❌ |
 | Fixtures / record-replay | ✅ | ❌ | ❌ |
+| Error injection | ✅ | ❌ | ❌ |
 | CI-friendly | ✅ | Slow/expensive | Heavy |
 
 ---
@@ -129,20 +130,33 @@ fixtures:
       stream_chunk_delay_ms: 50   # simulate realistic streaming speed
 ```
 
-### Error response
+### Error injection
+
+Simulate rate limits, 500s, or any HTTP error. Each provider gets its native error format automatically.
 
 ```yaml
 fixtures:
   - name: "rate_limit"
     match:
+      provider: openai
       messages:
         - role: user
           content:
-            contains: "trigger_error"
+            contains: "expensive query"
     response:
-      content: '{"error": {"message": "Rate limit exceeded", "type": "rate_limit_error"}}'
       http_status: 429
+      error_message: "Rate limit exceeded. Please retry after 60 seconds."
+      error_code: "rate_limit_exceeded"   # optional — defaults derived from http_status
 ```
+
+| `http_status` | OpenAI `type` | Anthropic `type` | Gemini `status` |
+|---|---|---|---|
+| 429 | `rate_limit_error` | `rate_limit_error` | `RESOURCE_EXHAUSTED` |
+| 500 | `server_error` | `api_error` | `INTERNAL` |
+| 503 | `server_error` | `api_error` | `UNAVAILABLE` |
+| 401 | `authentication_error` | `authentication_error` | `UNAUTHENTICATED` |
+
+Use this to test retry logic, fallback behaviour, and error handling without ever hitting a real API.
 
 ### Content match strategies
 

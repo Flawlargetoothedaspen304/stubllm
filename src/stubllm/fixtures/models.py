@@ -123,10 +123,12 @@ class MockResponse(BaseModel):
     latency_ms: int = 0
     stream_chunk_delay_ms: int = 20
     http_status: int = 200
+    error_message: str | None = None
+    error_code: str | None = None
 
     @model_validator(mode="after")
     def content_or_tool_calls(self) -> MockResponse:
-        if self.content is None and self.tool_calls is None:
+        if self.content is None and self.tool_calls is None and self.http_status < 400:
             self.content = "Mock response."
         return self
 

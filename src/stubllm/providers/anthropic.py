@@ -48,6 +48,12 @@ class AnthropicProvider(BaseProvider):
             if mock_resp.latency_ms > 0 and not stream:
                 await asyncio.sleep(mock_resp.latency_ms / 1000.0)
 
+            if mock_resp.http_status >= 400:
+                return JSONResponse(
+                    content=_format_error(mock_resp),
+                    status_code=mock_resp.http_status,
+                )
+
             if stream:
                 return self.make_streaming_response(mock_resp, model, request_id)
 
@@ -140,6 +146,30 @@ class AnthropicProvider(BaseProvider):
         """Anthropic SSE stream ends with message_stop."""
         data = {"type": "message_stop"}
         return f"event: message_stop\ndata: {json.dumps(data)}\n\n"
+
+
+def _format_error(response: MockResponse) -> dict[str, Any]:
+    """Format a MockResponse as an Anthropic-style error body."""
+    error_type = response.error_code or _default_error_type(response.http_status)
+    return {
+        "type": "error",
+        "error": {
+            "type": error_type,
+            "message": response.error_message or "An error occurred.",
+        },
+    }
+
+
+def _default_error_type(http_status: int) -> str:
+    mapping = {
+        400: "invalid_request_error",
+        401: "authentication_error",
+        403: "permission_denied_error",
+        429: "rate_limit_error",
+        500: "api_error",
+        529: "overloaded_error",
+    }
+    return mapping.get(http_status, "api_error")
 
 
 def _normalize_messages(

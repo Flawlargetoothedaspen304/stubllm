@@ -42,6 +42,12 @@ class GeminiProvider(BaseProvider):
             if mock_resp.latency_ms > 0:
                 await asyncio.sleep(mock_resp.latency_ms / 1000.0)
 
+            if mock_resp.http_status >= 400:
+                return JSONResponse(
+                    content=_format_error(mock_resp),
+                    status_code=mock_resp.http_status,
+                )
+
             payload = self.format_response(mock_resp, model_id, str(uuid.uuid4()))
             return JSONResponse(content=payload, status_code=mock_resp.http_status)
 
@@ -154,6 +160,30 @@ class GeminiProvider(BaseProvider):
 
     def format_stream_final(self, model: str, request_id: str) -> str:
         return ""  # Gemini SSE doesn't have a separate DONE marker
+
+
+def _format_error(response: MockResponse) -> dict[str, Any]:
+    """Format a MockResponse as a Gemini-style error body."""
+    status = response.error_code or _default_grpc_status(response.http_status)
+    return {
+        "error": {
+            "code": response.http_status,
+            "message": response.error_message or "An error occurred.",
+            "status": status,
+        }
+    }
+
+
+def _default_grpc_status(http_status: int) -> str:
+    mapping = {
+        400: "INVALID_ARGUMENT",
+        401: "UNAUTHENTICATED",
+        403: "PERMISSION_DENIED",
+        429: "RESOURCE_EXHAUSTED",
+        500: "INTERNAL",
+        503: "UNAVAILABLE",
+    }
+    return mapping.get(http_status, "UNKNOWN")
 
 
 def _normalize_contents(contents: list[dict[str, Any]]) -> list[dict[str, Any]]:

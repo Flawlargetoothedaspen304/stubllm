@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-04-02
+
+### Added
+- **Error injection**: fixtures can now simulate HTTP error responses (rate limits, 500s, etc.) using `http_status`, `error_message`, and `error_code` fields. Each provider returns the correct error envelope format (OpenAI, Anthropic, Gemini).
+
+```yaml
+fixtures:
+  - name: "rate_limit"
+    match:
+      provider: openai
+    response:
+      http_status: 429
+      error_message: "Rate limit exceeded."
+      error_code: "rate_limit_exceeded"
+```
+
 ## [0.1.1] - 2026-04-02
 
 ### Fixed

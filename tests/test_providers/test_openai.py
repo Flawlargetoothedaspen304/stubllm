@@ -106,3 +106,49 @@ def test_models_endpoint(client: TestClient) -> None:
     assert data["object"] == "list"
     assert len(data["data"]) > 0
     assert all("id" in m for m in data["data"])
+
+
+def test_error_response_rate_limit() -> None:
+    fixtures = [
+        Fixture(
+            name="rate_limit",
+            match=MatchCriteria(provider=Provider.OPENAI),
+            response=MockResponse(
+                http_status=429,
+                error_message="Rate limit exceeded.",
+                error_code="rate_limit_exceeded",
+            ),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1/chat/completions",
+        json={"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]},
+    )
+    assert resp.status_code == 429
+    data = resp.json()
+    assert "error" in data
+    assert data["error"]["message"] == "Rate limit exceeded."
+    assert data["error"]["code"] == "rate_limit_exceeded"
+
+
+def test_error_response_500() -> None:
+    fixtures = [
+        Fixture(
+            name="internal_error",
+            match=MatchCriteria(provider=Provider.OPENAI),
+            response=MockResponse(
+                http_status=500,
+                error_message="Internal server error.",
+            ),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1/chat/completions",
+        json={"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]},
+    )
+    assert resp.status_code == 500
+    data = resp.json()
+    assert "error" in data
+    assert data["error"]["message"] == "Internal server error."

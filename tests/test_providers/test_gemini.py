@@ -72,6 +72,53 @@ def test_function_call_response() -> None:
     assert part["functionCall"]["name"] == "search"
 
 
+def test_error_response_rate_limit() -> None:
+    fixtures = [
+        Fixture(
+            name="rate_limit",
+            match=MatchCriteria(provider=Provider.GEMINI),
+            response=MockResponse(
+                http_status=429,
+                error_message="Rate limit exceeded.",
+                error_code="RESOURCE_EXHAUSTED",
+            ),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1beta/models/gemini-pro:generateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "hi"}]}]},
+    )
+    assert resp.status_code == 429
+    data = resp.json()
+    assert "error" in data
+    assert data["error"]["code"] == 429
+    assert data["error"]["message"] == "Rate limit exceeded."
+    assert data["error"]["status"] == "RESOURCE_EXHAUSTED"
+
+
+def test_error_response_500() -> None:
+    fixtures = [
+        Fixture(
+            name="internal_error",
+            match=MatchCriteria(provider=Provider.GEMINI),
+            response=MockResponse(
+                http_status=500,
+                error_message="Internal error.",
+            ),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1beta/models/gemini-pro:generateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "hi"}]}]},
+    )
+    assert resp.status_code == 500
+    data = resp.json()
+    assert "error" in data
+    assert data["error"]["message"] == "Internal error."
+
+
 def test_model_role_normalization() -> None:
     """Gemini 'model' role should be normalized to 'assistant' for matching."""
     from stubllm.fixtures.models import ContentMatch, MessageMatch

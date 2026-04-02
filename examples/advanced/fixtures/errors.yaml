@@ -1,0 +1,29 @@
+fixtures:
+  - name: "rate_limit"
+    match:
+      provider: openai
+      messages:
+        - role: user
+          content:
+            contains: "expensive"
+    response:
+      http_status: 429
+      error_message: "Rate limit exceeded. Please retry after 60 seconds."
+      error_code: "rate_limit_exceeded"
+
+  - name: "server_error"
+    match:
+      provider: openai
+      messages:
+        - role: user
+          content:
+            contains: "crash"
+    response:
+      http_status: 500
+      error_message: "Internal server error."
+
+  - name: "normal_response"
+    match:
+      provider: openai
+    response:
+      content: "This is a normal response."

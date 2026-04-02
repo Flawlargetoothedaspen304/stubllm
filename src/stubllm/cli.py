@@ -1,4 +1,4 @@
-"""CLI entry point for mockllm."""
+"""CLI entry point for stubllm."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from stubllm import __version__
 @click.group()
 @click.version_option(version=__version__, prog_name="stubllm")
 def cli() -> None:
-    """mockllm — Deterministic mock server for LLM APIs."""
+    """stubllm — Deterministic mock server for LLM APIs."""
 
 
 @cli.command()
@@ -43,7 +43,7 @@ def serve(
     reload: bool,
     log_level: str,
 ) -> None:
-    """Start the mockllm HTTP server."""
+    """Start the stubllm HTTP server."""
     from stubllm.server import create_app
 
     dirs = list(fixture_dirs)
@@ -89,7 +89,7 @@ def record(
     port: int,
     log_level: str,
 ) -> None:
-    """Start mockllm in record-and-replay mode (proxy to real API)."""
+    """Start stubllm in record-and-replay mode (proxy to real API)."""
     from stubllm.recorder.proxy import create_recording_app
 
     fixture_dir.mkdir(parents=True, exist_ok=True)
