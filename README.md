@@ -268,14 +268,16 @@ message = client.messages.create(
 ### Google Gemini
 
 ```python
-import google.generativeai as genai
+from google import genai  # pip install google-genai
 
-genai.configure(
+client = genai.Client(
     api_key="test-key",
-    client_options={"api_endpoint": "localhost:8765"}
+    http_options={"base_url": "http://localhost:8765"},
 )
-model = genai.GenerativeModel("gemini-pro")
-response = model.generate_content("hello")
+response = client.models.generate_content(
+    model="gemini-2.0-flash",
+    contents="hello",
+)
 ```
 
 ---
