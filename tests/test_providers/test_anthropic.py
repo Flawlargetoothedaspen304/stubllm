@@ -90,8 +90,10 @@ def test_system_prompt_normalization() -> None:
             response=MockResponse(content="System matched!"),
         )
     ]
-    from stubllm.fixtures.models import MessageMatch, ContentMatch
-    fixtures[0].match.messages = [MessageMatch(role="system", content=ContentMatch(contains="helpful"))]
+    from stubllm.fixtures.models import ContentMatch, MessageMatch
+    fixtures[0].match.messages = [
+        MessageMatch(role="system", content=ContentMatch(contains="helpful"))
+    ]
 
     client = TestClient(create_app(fixtures=fixtures))
     resp = client.post(

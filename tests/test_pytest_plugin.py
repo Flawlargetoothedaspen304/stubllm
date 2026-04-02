@@ -53,7 +53,9 @@ class TestMockLLMServerFixture:
         plugin_server.reset()
         httpx.post(
             f"{plugin_server.url}/v1/chat/completions",
-            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "unique_test_prompt"}]},
+            json={"model": "gpt-4o", "messages": [
+                {"role": "user", "content": "unique_test_prompt"}
+            ]},
         )
         plugin_server.assert_called_with_prompt("unique_test_prompt")
 

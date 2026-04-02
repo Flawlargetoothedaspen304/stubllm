@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-import time
-
 import httpx
 import pytest
 
-from stubllm.fixtures.models import Fixture, MatchCriteria, ContentMatch, MessageMatch, MockResponse, Provider
+from stubllm.fixtures.models import (
+    ContentMatch,
+    Fixture,
+    MatchCriteria,
+    MessageMatch,
+    MockResponse,
+    Provider,
+)
 from stubllm.server import MockLLMServer
 
 

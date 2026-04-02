@@ -20,7 +20,9 @@ class MatchResult:
 class FixtureMatcher:
     """Stateless matcher: given a request and a list of fixtures, returns the best match."""
 
-    def __init__(self, fixtures: list[Fixture], fallback_response: MockResponse | None = None) -> None:
+    def __init__(
+        self, fixtures: list[Fixture], fallback_response: MockResponse | None = None
+    ) -> None:
         self._fixtures = fixtures
         self._fallback = fallback_response or MockResponse(
             content="No fixture matched this request.",

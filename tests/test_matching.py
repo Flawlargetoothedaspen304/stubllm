@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from stubllm.fixtures.matcher import FixtureMatcher
 from stubllm.fixtures.models import (
     ContentMatch,

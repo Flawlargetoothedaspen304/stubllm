@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import time
 import uuid
 from typing import Any
 
@@ -57,7 +56,9 @@ class AnthropicProvider(BaseProvider):
 
         return router
 
-    def format_response(self, response: MockResponse, model: str, request_id: str) -> dict[str, Any]:
+    def format_response(
+        self, response: MockResponse, model: str, request_id: str
+    ) -> dict[str, Any]:
         """Format a MockResponse as an Anthropic messages response."""
         content: list[dict[str, Any]] = []
 

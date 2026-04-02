@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -12,8 +11,6 @@ import yaml
 from stubllm.fixtures.loader import FixtureLoader
 from stubllm.fixtures.models import (
     ContentMatch,
-    Fixture,
-    FixtureFile,
     MatchCriteria,
     MessageMatch,
     MockResponse,

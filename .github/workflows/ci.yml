@@ -30,13 +30,13 @@ jobs:
         run: ruff check src/ tests/
 
       - name: Type check with mypy
-        run: mypy src/mockllm --ignore-missing-imports
+        run: mypy src/stubllm --ignore-missing-imports
         continue-on-error: true
 
       - name: Run tests with coverage
         run: |
           pytest tests/ \
-            --cov=mockllm \
+            --cov=stubllm \
             --cov-report=term-missing \
             --cov-report=xml \
             --cov-fail-under=80 \

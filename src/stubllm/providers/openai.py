@@ -107,7 +107,9 @@ class OpenAIProvider(BaseProvider):
 
         return router
 
-    def format_response(self, response: MockResponse, model: str, request_id: str) -> dict[str, Any]:
+    def format_response(
+        self, response: MockResponse, model: str, request_id: str
+    ) -> dict[str, Any]:
         """Format a MockResponse as an OpenAI chat completion response."""
         message: dict[str, Any] = {"role": "assistant"}
 
@@ -133,7 +135,9 @@ class OpenAIProvider(BaseProvider):
                 {
                     "index": 0,
                     "message": message,
-                    "finish_reason": "tool_calls" if response.tool_calls else response.finish_reason,
+                    "finish_reason": (
+                        "tool_calls" if response.tool_calls else response.finish_reason
+                    ),
                     "logprobs": None,
                 }
             ],

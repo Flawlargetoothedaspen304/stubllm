@@ -6,10 +6,10 @@ import json
 
 import pytest
 
-from stubllm.fixtures.models import MockResponse, ToolCallResponse
-from stubllm.providers.openai import OpenAIProvider
-from stubllm.providers.anthropic import AnthropicProvider
 from stubllm.fixtures.matcher import FixtureMatcher
+from stubllm.fixtures.models import MockResponse, ToolCallResponse
+from stubllm.providers.anthropic import AnthropicProvider
+from stubllm.providers.openai import OpenAIProvider
 from stubllm.streaming.sse import _tokenize, stream_response
 
 

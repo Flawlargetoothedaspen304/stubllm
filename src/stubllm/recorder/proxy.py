@@ -137,7 +137,11 @@ def _build_fixture(
 
 
 def _detect_provider(path: str) -> str | None:
-    if path.startswith("/v1/chat") or path.startswith("/v1/embeddings") or path.startswith("/v1/models"):
+    if (
+        path.startswith("/v1/chat")
+        or path.startswith("/v1/embeddings")
+        or path.startswith("/v1/models")
+    ):
         return "openai"
     if path.startswith("/v1/messages"):
         return "anthropic"

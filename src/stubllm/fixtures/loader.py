@@ -8,7 +8,7 @@ from typing import Any
 
 import yaml
 
-from stubllm.fixtures.models import Fixture, FixtureFile
+from stubllm.fixtures.models import Fixture
 
 
 class FixtureLoader:
@@ -22,7 +22,12 @@ class FixtureLoader:
     def load_directory(self, directory: Path) -> list[Fixture]:
         """Load all fixtures from a directory (recursive)."""
         fixtures: list[Fixture] = []
-        for path in sorted(directory.rglob("*.yaml")) + sorted(directory.rglob("*.yml")) + sorted(directory.rglob("*.json")):  # type: ignore[operator]
+        all_paths = (
+            sorted(directory.rglob("*.yaml"))
+            + sorted(directory.rglob("*.yml"))  # type: ignore[operator]
+            + sorted(directory.rglob("*.json"))
+        )
+        for path in all_paths:
             fixtures.extend(self.load_file(path))
         return fixtures
 
@@ -41,7 +46,9 @@ class FixtureLoader:
             return yaml.safe_load(text)  # type: ignore[return-value]
         if suffix == ".json":
             return json.loads(text)
-        raise ValueError(f"Unsupported fixture file format: {path.suffix!r}. Use .yaml, .yml, or .json")
+        raise ValueError(
+            f"Unsupported fixture file format: {path.suffix!r}. Use .yaml, .yml, or .json"
+        )
 
     def _parse_raw(self, raw: dict[str, Any] | list[Any], source: str) -> list[Fixture]:
         if isinstance(raw, list):
@@ -53,11 +60,15 @@ class FixtureLoader:
                 return [self._parse_one(item, i, source) for i, item in enumerate(items)]
             # Single fixture as a top-level dict
             return [self._parse_one(raw, 0, source)]
-        raise ValueError(f"Cannot parse fixture from {source}: expected dict or list, got {type(raw).__name__}")
+        raise ValueError(
+            f"Cannot parse fixture from {source}: expected dict or list, got {type(raw).__name__}"
+        )
 
     def _parse_one(self, data: Any, index: int, source: str) -> Fixture:
         if not isinstance(data, dict):
-            raise ValueError(f"Fixture #{index} in {source} must be a dict, got {type(data).__name__}")
+            raise ValueError(
+                f"Fixture #{index} in {source} must be a dict, got {type(data).__name__}"
+            )
         try:
             return Fixture.model_validate(data)
         except Exception as exc:

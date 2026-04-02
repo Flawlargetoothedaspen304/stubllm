@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import time
 import uuid
 from typing import Any
 
@@ -70,7 +69,9 @@ class GeminiProvider(BaseProvider):
 
         return router
 
-    def format_response(self, response: MockResponse, model: str, request_id: str) -> dict[str, Any]:
+    def format_response(
+        self, response: MockResponse, model: str, request_id: str
+    ) -> dict[str, Any]:
         """Format a MockResponse as a Gemini generateContent response."""
         parts: list[dict[str, Any]] = []
 
@@ -100,7 +101,10 @@ class GeminiProvider(BaseProvider):
             "candidates": [
                 {
                     "content": {"parts": parts, "role": "model"},
-                    "finishReason": "STOP" if response.finish_reason == "stop" else response.finish_reason.upper(),
+                    "finishReason": (
+                        "STOP" if response.finish_reason == "stop"
+                        else response.finish_reason.upper()
+                    ),
                     "index": 0,
                     "safetyRatings": [],
                 }
@@ -130,7 +134,10 @@ class GeminiProvider(BaseProvider):
                     args = _json.loads(args)
                 except _json.JSONDecodeError:
                     args = {}
-            parts = [{"functionCall": {"name": tool_call_chunk["function"].get("name", ""), "args": args}}]
+            parts = [{"functionCall": {
+                "name": tool_call_chunk["function"].get("name", ""),
+                "args": args,
+            }}]
         else:
             parts = [{"text": delta}]
 

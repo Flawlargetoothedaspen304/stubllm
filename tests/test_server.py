@@ -5,7 +5,15 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from stubllm.fixtures.models import Fixture, MatchCriteria, MessageMatch, ContentMatch, MockResponse, Provider, ToolCallResponse
+from stubllm.fixtures.models import (
+    ContentMatch,
+    Fixture,
+    MatchCriteria,
+    MessageMatch,
+    MockResponse,
+    Provider,
+    ToolCallResponse,
+)
 from stubllm.server import create_app
 
 

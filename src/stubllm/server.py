@@ -10,7 +10,6 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from stubllm import __version__
 from stubllm.fixtures.loader import FixtureLoader

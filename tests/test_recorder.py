@@ -2,20 +2,11 @@
 
 from __future__ import annotations
 
-import json
-import tempfile
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
-import yaml
-
 from stubllm.recorder.proxy import (
     _build_fixture,
     _detect_provider,
     _extract_response,
     _sanitize_headers,
-    create_recording_app,
 )
 
 
@@ -38,7 +29,11 @@ class TestDetectProvider:
 
 class TestSanitizeHeaders:
     def test_removes_host(self) -> None:
-        headers = {"host": "localhost:8765", "authorization": "Bearer sk-123", "content-type": "application/json"}
+        headers = {
+            "host": "localhost:8765",
+            "authorization": "Bearer sk-123",
+            "content-type": "application/json",
+        }
         sanitized = _sanitize_headers(headers)
         assert "host" not in sanitized
         assert "authorization" in sanitized  # We keep auth (user may want to forward)

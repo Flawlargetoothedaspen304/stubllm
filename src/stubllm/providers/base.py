@@ -26,7 +26,9 @@ class BaseProvider(ABC):
         ...
 
     @abstractmethod
-    def format_response(self, response: MockResponse, model: str, request_id: str) -> dict[str, Any]:
+    def format_response(
+        self, response: MockResponse, model: str, request_id: str
+    ) -> dict[str, Any]:
         """Convert a normalized MockResponse into the provider's wire format."""
         ...
 

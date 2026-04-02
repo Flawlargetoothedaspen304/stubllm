@@ -74,7 +74,7 @@ def test_function_call_response() -> None:
 
 def test_model_role_normalization() -> None:
     """Gemini 'model' role should be normalized to 'assistant' for matching."""
-    from stubllm.fixtures.models import MessageMatch, ContentMatch
+    from stubllm.fixtures.models import ContentMatch, MessageMatch
 
     fixtures = [
         Fixture(

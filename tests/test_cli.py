@@ -37,9 +37,10 @@ class TestCLI:
 
     def test_serve_with_fixture_dir(self, tmp_path: object) -> None:
         """serve command loads fixtures from a directory."""
-        import yaml
         from pathlib import Path
         from unittest.mock import patch
+
+        import yaml
 
         assert isinstance(tmp_path, Path)
         fixtures_dir = tmp_path / "fixtures"
@@ -50,7 +51,7 @@ class TestCLI:
 
         runner = CliRunner()
         with patch("uvicorn.run") as mock_run:
-            result = runner.invoke(
+            runner.invoke(
                 cli,
                 ["serve", "--port", "9999", "--fixture-dir", str(fixtures_dir)],
             )
@@ -61,9 +62,10 @@ class TestCLI:
 
     def test_serve_auto_loads_fixtures_dir(self, tmp_path: object) -> None:
         """serve command auto-loads ./fixtures if it exists."""
-        import yaml
         from pathlib import Path
         from unittest.mock import patch
+
+        import yaml
 
         assert isinstance(tmp_path, Path)
 
