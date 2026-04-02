@@ -83,6 +83,12 @@ def create_app(
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/_stats")
+    async def stats() -> dict[str, Any]:
+        return {
+            "fixture_call_counts": dict(app.state.fixture_call_counts),
+        }
+
     @app.get("/_fixtures")
     async def list_fixtures() -> dict[str, Any]:
         return {
@@ -138,6 +144,8 @@ class MockLLMServer:
 
     def reset_calls(self) -> None:
         self._call_log.clear()
+        if self.app is not None:
+            self.app.state.fixture_call_counts.clear()
 
     def add_fixtures(self, fixtures: list[Fixture]) -> None:
         """Dynamically add fixtures at runtime.

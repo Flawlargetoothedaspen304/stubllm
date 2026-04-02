@@ -144,6 +144,107 @@ class TestFixtureMatcher:
         )
         assert name == "joke_fixture"
 
+    def test_endpoint_mismatch_skipped(self) -> None:
+        """A fixture with the wrong endpoint is not matched."""
+        fixtures = [_make_fixture("ep_only", endpoint="/v1/embeddings")]
+        matcher = FixtureMatcher(fixtures)
+        _, name = matcher.match(
+            provider=Provider.OPENAI,
+            endpoint="/v1/chat/completions",
+            messages=[_msg("user", "hello")],
+        )
+        assert name == "__fallback__"
+
+    def test_endpoint_match_scores(self) -> None:
+        """Endpoint match adds to score and is preferred over no-endpoint fixture."""
+        fixtures = [
+            _make_fixture("with_endpoint", endpoint="/v1/chat/completions"),
+            _make_fixture("any_endpoint"),
+        ]
+        matcher = FixtureMatcher(fixtures)
+        _, name = matcher.match(
+            provider=Provider.OPENAI,
+            endpoint="/v1/chat/completions",
+            messages=[_msg("user", "hello")],
+        )
+        assert name == "with_endpoint"
+
+    def test_headers_match(self) -> None:
+        """Headers criteria must all match."""
+        fixtures = [
+            _make_fixture("with_header", headers={"x-tenant": "acme"}),
+        ]
+        matcher = FixtureMatcher(fixtures)
+        _, name = matcher.match(
+            provider=Provider.OPENAI,
+            endpoint="/v1/chat/completions",
+            messages=[_msg("user", "hello")],
+            headers={"x-tenant": "acme", "content-type": "application/json"},
+        )
+        assert name == "with_header"
+
+    def test_headers_mismatch_skipped(self) -> None:
+        fixtures = [_make_fixture("strict_header", headers={"x-tenant": "acme"})]
+        matcher = FixtureMatcher(fixtures)
+        _, name = matcher.match(
+            provider=Provider.OPENAI,
+            endpoint="/v1/chat/completions",
+            messages=[_msg("user", "hello")],
+            headers={"x-tenant": "other"},
+        )
+        assert name == "__fallback__"
+
+    def test_headers_none_when_criteria_requires(self) -> None:
+        """Passing headers=None when criteria specifies headers → no match."""
+        fixtures = [_make_fixture("needs_header", headers={"x-api": "v1"})]
+        matcher = FixtureMatcher(fixtures)
+        _, name = matcher.match(
+            provider=Provider.OPENAI,
+            endpoint="/v1/chat/completions",
+            messages=[_msg("user", "hello")],
+            headers=None,
+        )
+        assert name == "__fallback__"
+
+    def test_message_role_only_match(self) -> None:
+        """MessageMatch with only a role (no content) still matches and scores +1."""
+        fixtures = [
+            Fixture(
+                name="role_only",
+                match=MatchCriteria(
+                    messages=[MessageMatch(role="system")]
+                ),
+                response=MockResponse(content="role matched"),
+            )
+        ]
+        matcher = FixtureMatcher(fixtures)
+        _, name = matcher.match(
+            provider=Provider.OPENAI,
+            endpoint="/v1/chat/completions",
+            messages=[
+                _msg("system", "you are an assistant"),
+                _msg("user", "hello"),
+            ],
+        )
+        assert name == "role_only"
+
+    def test_message_str_content_match(self) -> None:
+        """MessageMatch with a plain string content matches and scores +3."""
+        fixtures = [
+            Fixture(
+                name="str_content",
+                match=MatchCriteria(messages=[MessageMatch(content="hello")]),
+                response=MockResponse(content="str matched"),
+            )
+        ]
+        matcher = FixtureMatcher(fixtures)
+        _, name = matcher.match(
+            provider=Provider.OPENAI,
+            endpoint="/v1/chat/completions",
+            messages=[_msg("user", "hello world")],
+        )
+        assert name == "str_content"
+
     def test_multiple_message_criteria(self) -> None:
         fixtures = [
             Fixture(

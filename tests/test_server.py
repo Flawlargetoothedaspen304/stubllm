@@ -154,6 +154,72 @@ class TestOpenAIModels:
         assert any(m["id"] == "gpt-4o" for m in data["data"])
 
 
+class TestStatsEndpoint:
+    def test_stats_initially_empty(self, client: TestClient) -> None:
+        resp = client.get("/_stats")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "fixture_call_counts" in data
+        assert isinstance(data["fixture_call_counts"], dict)
+
+    def test_stats_increments_after_call(self) -> None:
+        from stubllm.fixtures.models import Fixture, MatchCriteria, MockResponse, Provider
+
+        fixtures = [
+            Fixture(
+                name="stat_test",
+                match=MatchCriteria(provider=Provider.OPENAI),
+                response=MockResponse(content="counted"),
+            )
+        ]
+        app = create_app(fixtures=fixtures)
+        c = TestClient(app)
+        c.post(
+            "/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]},
+        )
+        resp = c.get("/_stats")
+        assert resp.status_code == 200
+        assert resp.json()["fixture_call_counts"].get("stat_test", 0) == 1
+
+    def test_fixture_files_loading(self, tmp_path: object) -> None:
+        """create_app accepts fixture_files= to load individual YAML files."""
+        from pathlib import Path
+
+        import yaml
+
+        assert isinstance(tmp_path, Path)
+        f = tmp_path / "test.yaml"
+        f.write_text(
+            yaml.dump([{"name": "loaded", "response": {"content": "from file"}}])
+        )
+
+        app = create_app(fixture_files=[f])
+        c = TestClient(app)
+        resp = c.get("/_fixtures")
+        assert resp.status_code == 200
+        assert any(fx["name"] == "loaded" for fx in resp.json()["fixtures"])
+
+    def test_fixture_dirs_loading(self, tmp_path: object) -> None:
+        """create_app accepts fixture_dirs= to scan a directory for YAML files."""
+        from pathlib import Path
+
+        import yaml
+
+        assert isinstance(tmp_path, Path)
+        d = tmp_path / "fixtures"
+        d.mkdir()
+        (d / "test.yaml").write_text(
+            yaml.dump([{"name": "from_dir", "response": {"content": "dir loaded"}}])
+        )
+
+        app = create_app(fixture_dirs=[d])
+        c = TestClient(app)
+        resp = c.get("/_fixtures")
+        assert resp.status_code == 200
+        assert any(fx["name"] == "from_dir" for fx in resp.json()["fixtures"])
+
+
 class TestOpenAIStreaming:
     def test_streaming_response(self, client: TestClient) -> None:
         resp = client.post(

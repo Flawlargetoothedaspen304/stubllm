@@ -93,6 +93,22 @@ class MockLLMServerFixture:
         last = self.calls[-1]
         assert last["path"] == path, f"Expected path {path!r}, got {last['path']!r}"
 
+    def assert_fixture_hit(self, name: str, times: int | None = None) -> None:
+        """Assert that the named fixture was matched (optionally exactly `times` times)."""
+        counts: dict[str, int] = {}
+        if self._server.app is not None:
+            counts = dict(self._server.app.state.fixture_call_counts)
+        hit_count = counts.get(name, 0)
+        if times is None:
+            assert hit_count > 0, (
+                f"Fixture {name!r} was never hit. Counts: {counts}"
+            )
+        else:
+            assert hit_count == times, (
+                f"Expected fixture {name!r} to be hit {times} time(s), got {hit_count}. "
+                f"Counts: {counts}"
+            )
+
 
 def use_fixtures(*fixture_paths: str | Path) -> Callable[..., Any]:
     """Decorator: load fixture files for a specific test.

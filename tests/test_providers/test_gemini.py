@@ -119,6 +119,84 @@ def test_error_response_500() -> None:
     assert data["error"]["message"] == "Internal error."
 
 
+def test_stream_generate_content(client: TestClient) -> None:
+    resp = client.post(
+        "/v1beta/models/gemini-pro:streamGenerateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "stream this"}]}]},
+    )
+    assert resp.status_code == 200
+    assert "data: " in resp.text
+
+
+def test_stream_generate_content_with_tool_call() -> None:
+    fixtures = [
+        Fixture(
+            name="stream_tool",
+            match=MatchCriteria(provider=Provider.GEMINI),
+            response=MockResponse(
+                tool_calls=[
+                    ToolCallResponse(
+                        id="fc_stream",
+                        function={"name": "lookup", "arguments": '{"q": "x"}'},
+                    )
+                ]
+            ),
+        )
+    ]
+    c = TestClient(create_app(fixtures=fixtures))
+    resp = c.post(
+        "/v1beta/models/gemini-pro:streamGenerateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "lookup x"}]}]},
+    )
+    assert resp.status_code == 200
+    assert "functionCall" in resp.text
+
+
+def test_generate_content_with_latency(client: TestClient) -> None:
+    import time
+
+    fixtures = [
+        Fixture(
+            name="slow",
+            match=MatchCriteria(provider=Provider.GEMINI),
+            response=MockResponse(content="ok", latency_ms=50),
+        )
+    ]
+    c = TestClient(create_app(fixtures=fixtures))
+    start = time.monotonic()
+    resp = c.post(
+        "/v1beta/models/gemini-pro:generateContent",
+        json={"contents": [{"role": "user", "parts": [{"text": "hi"}]}]},
+    )
+    elapsed_ms = (time.monotonic() - start) * 1000
+    assert resp.status_code == 200
+    assert elapsed_ms >= 40  # allow slight timing slack
+
+
+def test_format_stream_chunk_invalid_json_args() -> None:
+    """format_stream_chunk with unparseable JSON args falls back to empty dict."""
+    from stubllm.fixtures.matcher import FixtureMatcher
+    from stubllm.providers.gemini import GeminiProvider
+
+    provider = GeminiProvider(FixtureMatcher([]))
+    chunk = provider.format_stream_chunk(
+        delta="",
+        model="gemini-pro",
+        request_id="req-1",
+        finish=False,
+        tool_call_chunk={
+            "id": "tc1",
+            "type": "function",
+            "function": {"name": "broken", "arguments": "NOT_VALID_JSON"},
+        },
+    )
+    # Should not raise; args fall back to {}
+    import json as _json
+    data = _json.loads(chunk.removeprefix("data: "))
+    part = data["candidates"][0]["content"]["parts"][0]
+    assert part["functionCall"]["args"] == {}
+
+
 def test_model_role_normalization() -> None:
     """Gemini 'model' role should be normalized to 'assistant' for matching."""
     from stubllm.fixtures.models import ContentMatch, MessageMatch

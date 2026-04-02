@@ -154,6 +154,139 @@ def test_error_response_overloaded() -> None:
     assert data["error"]["message"] == "Overloaded."
 
 
+def test_latency_non_streaming() -> None:
+    import time
+
+    fixtures = [
+        Fixture(
+            name="slow",
+            match=MatchCriteria(provider=Provider.ANTHROPIC),
+            response=MockResponse(content="ok", latency_ms=50),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    start = time.monotonic()
+    resp = client.post(
+        "/v1/messages",
+        json={"model": "claude-opus-4-6", "messages": [{"role": "user", "content": "hi"}]},
+    )
+    elapsed_ms = (time.monotonic() - start) * 1000
+    assert resp.status_code == 200
+    assert elapsed_ms >= 40
+
+
+def test_tool_use_dict_arguments() -> None:
+    """Tool arguments passed as a dict (not a JSON string) should be handled directly."""
+    fixtures = [
+        Fixture(
+            name="dict_args",
+            match=MatchCriteria(provider=Provider.ANTHROPIC),
+            response=MockResponse(
+                tool_calls=[
+                    ToolCallResponse(
+                        id="toolu_02",
+                        function={"name": "search", "arguments": {"query": "test"}},  # dict, not str
+                    )
+                ]
+            ),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1/messages",
+        json={"model": "claude-opus-4-6", "messages": [{"role": "user", "content": "search"}]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["content"][0]["type"] == "tool_use"
+    assert data["content"][0]["input"] == {"query": "test"}
+
+
+def test_tool_use_invalid_json_arguments() -> None:
+    """Invalid JSON string in tool arguments falls back to empty dict."""
+    fixtures = [
+        Fixture(
+            name="bad_args",
+            match=MatchCriteria(provider=Provider.ANTHROPIC),
+            response=MockResponse(
+                tool_calls=[
+                    ToolCallResponse(
+                        id="toolu_03",
+                        function={"name": "lookup", "arguments": "NOT_VALID_JSON"},
+                    )
+                ]
+            ),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1/messages",
+        json={"model": "claude-opus-4-6", "messages": [{"role": "user", "content": "lookup"}]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["content"][0]["input"] == {}
+
+
+def test_streaming_with_tool_call() -> None:
+    """Streaming with tool calls emits content_block_start events."""
+    fixtures = [
+        Fixture(
+            name="stream_tool",
+            match=MatchCriteria(provider=Provider.ANTHROPIC),
+            response=MockResponse(
+                tool_calls=[
+                    ToolCallResponse(
+                        id="toolu_stream",
+                        function={"name": "weather", "arguments": "{}"},
+                    )
+                ]
+            ),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1/messages",
+        json={
+            "model": "claude-opus-4-6",
+            "messages": [{"role": "user", "content": "weather?"}],
+            "stream": True,
+        },
+    )
+    assert resp.status_code == 200
+    assert "content_block_start" in resp.text
+
+
+def test_content_blocks_normalization() -> None:
+    """Anthropic content blocks (list format) are normalized for matching."""
+    from stubllm.fixtures.models import ContentMatch, MessageMatch
+
+    fixtures = [
+        Fixture(
+            name="block_match",
+            match=MatchCriteria(
+                provider=Provider.ANTHROPIC,
+                messages=[MessageMatch(content=ContentMatch(contains="block content"))],
+            ),
+            response=MockResponse(content="block matched"),
+        )
+    ]
+    client = TestClient(create_app(fixtures=fixtures))
+    resp = client.post(
+        "/v1/messages",
+        json={
+            "model": "claude-opus-4-6",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [{"type": "text", "text": "block content here"}],
+                }
+            ],
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["content"][0]["text"] == "block matched"
+
+
 def test_streaming_anthropic() -> None:
     fixtures = [
         Fixture(

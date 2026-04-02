@@ -337,6 +337,92 @@ class TestMockLLMServerFixtureGaps:
         with pytest.raises(AssertionError):
             plugin_server.assert_last_call_path("/v1/wrong/path")
 
+    def test_assert_fixture_hit_passes_when_matched(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        import httpx
+
+        from stubllm.fixtures.models import Fixture, MatchCriteria, MockResponse, Provider
+
+        plugin_server.reset()
+        plugin_server.replace_fixtures([
+            Fixture(
+                name="hit_me",
+                match=MatchCriteria(provider=Provider.OPENAI),
+                response=MockResponse(content="ok"),
+            )
+        ])
+        httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "x"}]},
+        )
+        plugin_server.assert_fixture_hit("hit_me")
+        plugin_server.assert_fixture_hit("hit_me", times=1)
+
+    def test_assert_fixture_hit_fails_when_not_matched(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        plugin_server.reset()
+        plugin_server.replace_fixtures([])
+        with pytest.raises(AssertionError):
+            plugin_server.assert_fixture_hit("nonexistent")
+
+    def test_assert_fixture_hit_fails_on_wrong_count(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        import httpx
+
+        from stubllm.fixtures.models import Fixture, MatchCriteria, MockResponse, Provider
+
+        plugin_server.reset()
+        plugin_server.replace_fixtures([
+            Fixture(
+                name="count_me",
+                match=MatchCriteria(provider=Provider.OPENAI),
+                response=MockResponse(content="ok"),
+            )
+        ])
+        httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "x"}]},
+        )
+        with pytest.raises(AssertionError):
+            plugin_server.assert_fixture_hit("count_me", times=5)
+
+    def test_reset_clears_sequence_counts(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        """reset() must also clear fixture_call_counts so sequences restart."""
+        import httpx
+
+        from stubllm.fixtures.models import Fixture, MatchCriteria, MockResponse, Provider
+
+        plugin_server.replace_fixtures([
+            Fixture(
+                name="seq_reset",
+                match=MatchCriteria(provider=Provider.OPENAI),
+                sequence=[
+                    MockResponse(content="first"),
+                    MockResponse(content="second"),
+                ],
+            )
+        ])
+        plugin_server.reset()
+        # After reset, sequence should start from the beginning again
+        r1 = httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "x"}]},
+        )
+        assert r1.json()["choices"][0]["message"]["content"] == "first"
+
+        plugin_server.reset()
+        r2 = httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "x"}]},
+        )
+        # Must be "first" again (sequence restarted), not "second"
+        assert r2.json()["choices"][0]["message"]["content"] == "first"
+
     def test_add_fixtures_appends_without_replacing(
         self, plugin_server: MockLLMServerFixture
     ) -> None:

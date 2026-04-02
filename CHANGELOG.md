@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-04-02
+
+### Fixed
+- **`reset()` now resets sequences**: `MockLLMServerFixture.reset()` (and `MockLLMServer.reset_calls()`) now clears per-fixture call counters, so sequences restart from the beginning after a reset. Previously only the call log was cleared.
+
+### Added
+- **`GET /_stats` endpoint**: Returns `{"fixture_call_counts": {...}}` — per-fixture invocation counts, useful for debugging sequence state during development.
+- **`MockLLMServerFixture.assert_fixture_hit(name, times=None)`**: Assert that a specific fixture was matched. Pass `times=N` to assert an exact count.
+
+```python
+stubllm_server.assert_fixture_hit("my_fixture")        # at least once
+stubllm_server.assert_fixture_hit("my_fixture", times=3)  # exactly 3 times
+```
+
 ## [0.1.3] - 2026-04-02
 
 ### Added

@@ -73,6 +73,35 @@ class TestMatchCriteria:
         assert empty.specificity_score() < with_provider.specificity_score()
         assert with_provider.specificity_score() < with_exact_msg.specificity_score()
 
+    def test_specificity_score_endpoint_and_model(self) -> None:
+        with_endpoint = MatchCriteria(endpoint="/v1/chat/completions")
+        with_model = MatchCriteria(model="gpt-4o")
+        base = MatchCriteria()
+        assert with_endpoint.specificity_score() > base.specificity_score()
+        assert with_model.specificity_score() > base.specificity_score()
+        # model scores higher than endpoint
+        assert with_model.specificity_score() > with_endpoint.specificity_score()
+
+    def test_specificity_score_message_contains(self) -> None:
+        c = MatchCriteria(messages=[MessageMatch(content=ContentMatch(contains="hi"))])
+        assert c.specificity_score() > 0
+
+    def test_specificity_score_message_regex(self) -> None:
+        c = MatchCriteria(messages=[MessageMatch(content=ContentMatch(regex=r"hello.*"))])
+        assert c.specificity_score() > 0
+
+    def test_specificity_score_message_str_content(self) -> None:
+        c = MatchCriteria(messages=[MessageMatch(content="hello")])
+        assert c.specificity_score() > 0
+
+    def test_specificity_score_tools_present(self) -> None:
+        c = MatchCriteria(tools_present=True)
+        assert c.specificity_score() == 2
+
+    def test_specificity_score_headers(self) -> None:
+        c = MatchCriteria(headers={"x-custom": "val1", "x-other": "val2"})
+        assert c.specificity_score() == 2  # len(headers) == 2
+
 
 class TestMockResponse:
     def test_default_content_when_none(self) -> None:
