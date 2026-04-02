@@ -91,3 +91,56 @@ class TestAnthropicStreaming:
         # Each chunk should have event: prefix
         for c in chunks:
             assert c.startswith("event: ")
+
+
+class TestGeminiStreaming:
+    def setup_method(self) -> None:
+        from stubllm.providers.gemini import GeminiProvider
+
+        self.matcher = FixtureMatcher([])
+        self.provider = GeminiProvider(self.matcher)
+
+    @pytest.mark.asyncio
+    async def test_streams_text_chunks(self) -> None:
+        response = MockResponse(content="Hello Gemini!", stream_chunk_delay_ms=0)
+        chunks = []
+        async for chunk in stream_response(
+            self.provider, response, "gemini-pro", "req_123"
+        ):
+            chunks.append(chunk)
+        assert len(chunks) > 0
+        # Each chunk should be data: prefixed JSON
+        for c in chunks:
+            if c:  # Gemini has no [DONE] marker, final may be empty
+                assert c.startswith("data: ")
+                data = json.loads(c[6:])
+                assert "candidates" in data
+
+    @pytest.mark.asyncio
+    async def test_streams_tool_call(self) -> None:
+        tc = ToolCallResponse(
+            id="call_g1",
+            function={"name": "search_web", "arguments": '{"query": "test"}'},
+        )
+        response = MockResponse(tool_calls=[tc], stream_chunk_delay_ms=0)
+        chunks = []
+        async for chunk in stream_response(
+            self.provider, response, "gemini-pro", "req_456"
+        ):
+            chunks.append(chunk)
+        non_empty = [c for c in chunks if c]
+        assert len(non_empty) > 0
+        # Tool call chunk should contain functionCall
+        assert any("functionCall" in c for c in non_empty)
+
+    @pytest.mark.asyncio
+    async def test_final_chunk_has_stop_reason(self) -> None:
+        response = MockResponse(content="Done.", stream_chunk_delay_ms=0)
+        chunks = []
+        async for chunk in stream_response(
+            self.provider, response, "gemini-pro", "req_789"
+        ):
+            chunks.append(chunk)
+        non_empty = [c for c in chunks if c]
+        last = json.loads(non_empty[-1][6:])
+        assert last["candidates"][0]["finishReason"] == "STOP"

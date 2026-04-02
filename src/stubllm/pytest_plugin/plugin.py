@@ -68,6 +68,19 @@ class MockLLMServerFixture:
             f"Calls made: {[c.get('body', {}).get('messages') for c in self.calls]}"
         )
 
+    def assert_not_called(self) -> None:
+        assert self.call_count == 0, f"Expected no calls, got {self.call_count}"
+
+    def assert_called_n_times(self, n: int) -> None:
+        assert self.call_count == n, f"Expected {n} call(s), got {self.call_count}"
+
+    def assert_model_was(self, model: str) -> None:
+        """Assert that at least one call used the given model name."""
+        models_used = [c.get("body", {}).get("model") for c in self.calls]
+        assert model in models_used, (
+            f"Model {model!r} was not used. Models seen: {models_used}"
+        )
+
     def assert_last_call_path(self, path: str) -> None:
         assert self.calls, "No calls recorded"
         last = self.calls[-1]

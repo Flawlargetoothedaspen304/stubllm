@@ -83,3 +83,26 @@ def test_usage_fields(client: TestClient) -> None:
     assert "prompt_tokens" in usage
     assert "completion_tokens" in usage
     assert "total_tokens" in usage
+
+
+def test_embeddings_endpoint(client: TestClient) -> None:
+    resp = client.post(
+        "/v1/embeddings",
+        json={"model": "text-embedding-3-small", "input": "Hello world"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["object"] == "list"
+    assert len(data["data"]) > 0
+    assert data["data"][0]["object"] == "embedding"
+    assert isinstance(data["data"][0]["embedding"], list)
+    assert data["model"] == "text-embedding-3-small"
+
+
+def test_models_endpoint(client: TestClient) -> None:
+    resp = client.get("/v1/models")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["object"] == "list"
+    assert len(data["data"]) > 0
+    assert all("id" in m for m in data["data"])

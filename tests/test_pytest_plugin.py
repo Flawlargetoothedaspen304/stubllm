@@ -100,6 +100,72 @@ class TestMockLLMServerFixture:
         )
         plugin_server.assert_last_call_path("/v1/chat/completions")
 
+    def test_assert_not_called_passes_when_no_calls(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        plugin_server.reset()
+        plugin_server.assert_not_called()
+
+    def test_assert_not_called_fails_when_called(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        import httpx
+
+        plugin_server.reset()
+        httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "x"}]},
+        )
+        with pytest.raises(AssertionError):
+            plugin_server.assert_not_called()
+
+    def test_assert_called_n_times(self, plugin_server: MockLLMServerFixture) -> None:
+        import httpx
+
+        plugin_server.reset()
+        for _ in range(3):
+            httpx.post(
+                f"{plugin_server.url}/v1/chat/completions",
+                json={"model": "gpt-4o", "messages": [{"role": "user", "content": "x"}]},
+            )
+        plugin_server.assert_called_n_times(3)
+
+    def test_assert_called_n_times_fails_on_wrong_count(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        import httpx
+
+        plugin_server.reset()
+        httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "x"}]},
+        )
+        with pytest.raises(AssertionError):
+            plugin_server.assert_called_n_times(5)
+
+    def test_assert_model_was(self, plugin_server: MockLLMServerFixture) -> None:
+        import httpx
+
+        plugin_server.reset()
+        httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "x"}]},
+        )
+        plugin_server.assert_model_was("gpt-4o-mini")
+
+    def test_assert_model_was_fails_on_wrong_model(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        import httpx
+
+        plugin_server.reset()
+        httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "x"}]},
+        )
+        with pytest.raises(AssertionError):
+            plugin_server.assert_model_was("claude-3-opus")
+
     def test_calls_list(self, plugin_server: MockLLMServerFixture) -> None:
         import httpx
 
