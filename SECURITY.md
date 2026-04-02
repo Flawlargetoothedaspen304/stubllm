@@ -4,13 +4,14 @@
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | Yes       |
+| 0.1.x   | ✅ Yes    |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability, please **do not** open a public GitHub issue.
+If you discover a security vulnerability, **do not** open a public GitHub issue.
 
-Instead, report it by emailing the maintainers via a [GitHub private vulnerability report](https://github.com/airupt/stubllm/security/advisories/new).
+Use GitHub's private vulnerability reporting:
+👉 **[Report a vulnerability](https://github.com/airupt/stubllm/security/advisories/new)**
 
 Include:
 - A description of the vulnerability

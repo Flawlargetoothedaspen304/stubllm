@@ -14,8 +14,7 @@ All notable changes to this project will be documented in this file.
 - **CI restructured**: `lint` and `type-check` are now separate CI jobs (previously steps inside the matrix job). This fixes branch protection status checks and avoids running ruff/mypy 4× per push.
 - **Publish workflow runs tests**: The publish workflow now runs lint, type-check, and tests before building, ensuring nothing broken can be shipped via a tag.
 - **OIDC trusted publishing**: Automated PyPI releases via GitHub Actions — no API token stored in secrets.
-- **Dependabot**: Weekly updates for pip dependencies and GitHub Actions.
-- **SECURITY.md**: Vulnerability reporting policy.
+- **SECURITY.md**: Vulnerability reporting policy with private advisory support.
 - **Branch protection on main**: Force-push and deletion blocked; all CI jobs required to pass before merge.
 
 ## [0.1.4] - 2026-04-02

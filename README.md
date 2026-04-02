@@ -5,6 +5,8 @@
 [![CI](https://github.com/airupt/stubllm/actions/workflows/ci.yml/badge.svg)](https://github.com/airupt/stubllm/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/stubllm)](https://pypi.org/project/stubllm/)
 [![Python](https://img.shields.io/pypi/pyversions/stubllm)](https://pypi.org/project/stubllm/)
+[![Downloads](https://pepy.tech/badge/stubllm)](https://pepy.tech/project/stubllm)
+[![GitHub Stars](https://img.shields.io/github/stars/airupt/stubllm?style=social)](https://github.com/airupt/stubllm/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Works with: **OpenAI** · **Anthropic** · **Google Gemini**
@@ -481,6 +483,12 @@ cd stubllm
 pip install -e ".[dev]"
 pytest tests/ -v
 ```
+
+---
+
+## Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=airupt/stubllm&type=Date)](https://star-history.com/#airupt/stubllm&Date)
 
 ---
 
