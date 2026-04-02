@@ -140,7 +140,11 @@ class MockLLMServer:
         self._call_log.clear()
 
     def add_fixtures(self, fixtures: list[Fixture]) -> None:
-        """Dynamically add fixtures at runtime."""
+        """Dynamically add fixtures at runtime.
+
+        Call counts for existing fixtures are preserved. Use replace_fixtures()
+        to atomically swap all fixtures and reset sequence call counts.
+        """
         if self.app is not None:
             existing = self.app.state.fixtures
             existing.extend(fixtures)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from stubllm.fixtures.models import Fixture, MatchCriteria, MockResponse, Provider
-from stubllm.pytest_plugin.plugin import MockLLMServerFixture, use_fixtures
+from stubllm.pytest_plugin._helpers import MockLLMServerFixture, use_fixtures
 from stubllm.server import MockLLMServer
 
 
@@ -252,3 +252,115 @@ class TestUseFixturesDecorator:
 
         my_test()
         assert called == [True]
+
+    def test_decorator_finds_positional_server_arg(self, plugin_server: MockLLMServerFixture) -> None:
+        """Server passed as a positional arg (not a kwarg) must still be detected."""
+        called = []
+
+        @use_fixtures()
+        def my_test(stubllm_server: MockLLMServerFixture) -> None:
+            called.append(True)
+
+        # Pass the server as a positional argument
+        my_test(plugin_server)
+        assert called == [True]
+
+    def test_decorator_loads_fixture_file(self, tmp_path: pytest.TempPathFactory, plugin_server: MockLLMServerFixture) -> None:
+        """Fixture files are loaded and pushed to the server when the test runs."""
+        yaml_file = tmp_path / "seq_test.yaml"  # type: ignore[operator]
+        yaml_file.write_text(
+            "fixtures:\n"
+            "  - name: file_fixture\n"
+            "    response:\n"
+            "      content: loaded_from_file\n"
+        )
+        loaded_server: list[MockLLMServerFixture] = []
+
+        @use_fixtures(str(yaml_file))
+        def my_test(stubllm_server: MockLLMServerFixture) -> None:
+            loaded_server.append(stubllm_server)
+
+        my_test(stubllm_server=plugin_server)
+
+        # server fixture list must have the file fixture
+        assert any(f.name == "file_fixture" for f in plugin_server._server.app.state.fixtures)  # type: ignore[union-attr]
+
+
+# ---------------------------------------------------------------------------
+# Tests for MockLLMServerFixture gaps
+# ---------------------------------------------------------------------------
+
+
+class TestMockLLMServerFixtureGaps:
+    def test_assert_called_with_prompt_case_sensitive_matches(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        import httpx
+
+        plugin_server.reset()
+        httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "CaseSensitive"}]},
+        )
+        plugin_server.assert_called_with_prompt("CaseSensitive", case_sensitive=True)
+
+    def test_assert_called_with_prompt_case_sensitive_no_match(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        import httpx
+
+        plugin_server.reset()
+        httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "lowercase"}]},
+        )
+        with pytest.raises(AssertionError):
+            plugin_server.assert_called_with_prompt("LOWERCASE", case_sensitive=True)
+
+    def test_assert_last_call_path_raises_when_no_calls(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        plugin_server.reset()
+        with pytest.raises(AssertionError, match="No calls recorded"):
+            plugin_server.assert_last_call_path("/v1/chat/completions")
+
+    def test_assert_last_call_path_raises_on_wrong_path(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        import httpx
+
+        plugin_server.reset()
+        httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "x"}]},
+        )
+        with pytest.raises(AssertionError):
+            plugin_server.assert_last_call_path("/v1/wrong/path")
+
+    def test_add_fixtures_appends_without_replacing(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        """add_fixtures must append — existing fixtures must still match."""
+        plugin_server.replace_fixtures(
+            [Fixture(name="base", response=MockResponse(content="base_response"))]
+        )
+        plugin_server.add_fixtures(
+            [Fixture(name="extra", response=MockResponse(content="extra_response"))]
+        )
+        names = [f.name for f in plugin_server._server.app.state.fixtures]  # type: ignore[union-attr]
+        assert "base" in names
+        assert "extra" in names
+
+
+# ---------------------------------------------------------------------------
+# Test for the session-scoped stubllm_server pytest fixture
+# ---------------------------------------------------------------------------
+
+
+def test_session_stubllm_server_fixture(stubllm_server: MockLLMServerFixture) -> None:
+    """The session-scoped stubllm_server fixture from the plugin must be usable."""
+    import httpx
+
+    resp = httpx.get(f"{stubllm_server.url}/health")
+    assert resp.status_code == 200
+    assert stubllm_server.openai_url.endswith("/v1/")

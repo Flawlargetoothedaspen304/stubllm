@@ -1,0 +1,16 @@
+fixtures:
+  - name: "retry_then_succeed"
+    match:
+      provider: openai
+      messages:
+        - role: user
+          content:
+            contains: "retry"
+    sequence:
+      - http_status: 429
+        error_message: "Rate limit exceeded. Please retry after 1 second."
+        error_code: "rate_limit_exceeded"
+      - http_status: 429
+        error_message: "Rate limit exceeded. Please retry after 1 second."
+        error_code: "rate_limit_exceeded"
+      - content: "Success after retry!"
