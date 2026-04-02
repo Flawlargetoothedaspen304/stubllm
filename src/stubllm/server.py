@@ -145,6 +145,13 @@ class MockLLMServer:
             existing.extend(fixtures)
             self.app.state.matcher._fixtures = existing
 
+    def replace_fixtures(self, fixtures: list[Fixture]) -> None:
+        """Replace all current fixtures with the given list."""
+        if self.app is not None:
+            self.app.state.fixtures.clear()
+            self.app.state.fixtures.extend(fixtures)
+            self.app.state.matcher._fixtures = self.app.state.fixtures
+
     def start(self) -> None:
         """Start server in a background thread."""
         import socket

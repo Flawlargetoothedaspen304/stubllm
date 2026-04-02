@@ -49,6 +49,9 @@ class MockLLMServerFixture:
     def add_fixtures(self, fixtures: list[Fixture]) -> None:
         self._server.add_fixtures(fixtures)
 
+    def replace_fixtures(self, fixtures: list[Fixture]) -> None:
+        self._server.replace_fixtures(fixtures)
+
     def assert_called_once(self) -> None:
         assert self.call_count == 1, f"Expected 1 call, got {self.call_count}"
 
@@ -143,7 +146,7 @@ def use_fixtures(*fixture_paths: str | Path) -> Callable[..., Any]:
                 fixtures: list[Any] = []
                 for path in fixture_paths:
                     fixtures.extend(loader.load_file(Path(path)))
-                server_fixture.add_fixtures(fixtures)
+                server_fixture.replace_fixtures(fixtures)
 
             return func(*args, **kwargs)
 

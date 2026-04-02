@@ -179,6 +179,54 @@ class TestMockLLMServerFixture:
         assert calls[0]["path"] == "/v1/chat/completions"
 
 
+    def test_fixture_isolation_between_decorator_calls(
+        self, plugin_server: MockLLMServerFixture
+    ) -> None:
+        """Fixtures from a previous @use_fixtures call must not bleed into the next."""
+        import httpx
+
+        from stubllm.fixtures.models import (
+            ContentMatch,
+            Fixture,
+            MatchCriteria,
+            MessageMatch,
+            MockResponse,
+        )
+
+        # Load fixture A: matches "alpha" → "response_alpha"
+        plugin_server.replace_fixtures([
+            Fixture(
+                name="alpha",
+                match=MatchCriteria(
+                    messages=[MessageMatch(content=ContentMatch(contains="alpha"))]
+                ),
+                response=MockResponse(content="response_alpha"),
+            )
+        ])
+        r1 = httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "alpha"}]},
+        )
+        assert "response_alpha" in r1.json()["choices"][0]["message"]["content"]
+
+        # Now replace with fixture B: matches "beta" → "response_beta"
+        plugin_server.replace_fixtures([
+            Fixture(
+                name="beta",
+                match=MatchCriteria(
+                    messages=[MessageMatch(content=ContentMatch(contains="beta"))]
+                ),
+                response=MockResponse(content="response_beta"),
+            )
+        ])
+        # "alpha" fixture must be gone — should get fallback, NOT response_alpha
+        r2 = httpx.post(
+            f"{plugin_server.url}/v1/chat/completions",
+            json={"model": "gpt-4o", "messages": [{"role": "user", "content": "alpha"}]},
+        )
+        assert "response_alpha" not in r2.json()["choices"][0]["message"]["content"]
+
+
 class TestUseFixturesDecorator:
     def test_decorator_preserves_function_name(self) -> None:
         @use_fixtures("some_file.yaml")
