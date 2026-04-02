@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 from stubllm.fixtures.models import Fixture, MatchCriteria, MockResponse, Provider
 from stubllm.server import MockLLMServer, create_app
 
-
 # ---------------------------------------------------------------------------
 # Unit tests: Fixture.get_response()
 # ---------------------------------------------------------------------------
