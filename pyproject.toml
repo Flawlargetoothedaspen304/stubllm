@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "stubllm"
-version = "0.1.2"
+version = "0.1.3"
 description = "Deterministic mock server for LLM APIs. Test your AI code without spending tokens."
 readme = "README.md"
 license = { text = "MIT" }

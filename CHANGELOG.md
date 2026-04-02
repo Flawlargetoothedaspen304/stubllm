@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.2] - 2026-04-02
+## [0.1.3] - 2026-04-02
 
 ### Added
 - **Response sequences**: a single fixture can now return different responses on successive calls. Use `sequence:` instead of `response:`. After the sequence is exhausted, the last entry repeats — perfect for testing retry logic (fail twice, then succeed).
