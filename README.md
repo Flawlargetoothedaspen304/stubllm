@@ -3,7 +3,6 @@
 **Deterministic mock server for LLM APIs. Test your AI code without spending tokens.**
 
 [![CI](https://github.com/airupt/stubllm/actions/workflows/ci.yml/badge.svg)](https://github.com/airupt/stubllm/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/airupt/stubllm/branch/main/graph/badge.svg)](https://codecov.io/gh/airupt/stubllm)
 [![PyPI](https://img.shields.io/pypi/v/stubllm)](https://pypi.org/project/stubllm/)
 [![Python](https://img.shields.io/pypi/pyversions/stubllm)](https://pypi.org/project/stubllm/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
